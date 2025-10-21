@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
@@ -200,6 +201,7 @@ type IPManager struct {
 	asnRulesMap   map[string]*ASNRule // ASN -> rule
 	autoSave      bool
 	cleanupTimer  *time.Ticker
+	lastRequestTime map[string]time.Time // IP -> last request timestamp for interval checks
 }
 
 var (
@@ -217,16 +219,17 @@ func InitIPManager(configPath string, autoSave bool) error {
 		}
 
 		ipManager = &IPManager{
-			configPath:    configPath,
-			bannedMap:     make(map[string]*IPRule),
-			whitelistMap:  make(map[string]*IPRule),
-			monitoredMap:  make(map[string]*IPRule),
-			challengedMap: make(map[string]*IPRule),
-			throttledMap:  make(map[string]*IPRule),
-			geoRulesMap:   make(map[string]*GeoRule),
-			asnRulesMap:   make(map[string]*ASNRule),
-			autoSave:      autoSave,
-			cleanupTimer:  time.NewTicker(1 * time.Hour),
+			configPath:      configPath,
+			bannedMap:       make(map[string]*IPRule),
+			whitelistMap:    make(map[string]*IPRule),
+			monitoredMap:    make(map[string]*IPRule),
+			challengedMap:   make(map[string]*IPRule),
+			throttledMap:    make(map[string]*IPRule),
+			geoRulesMap:     make(map[string]*GeoRule),
+			asnRulesMap:     make(map[string]*ASNRule),
+			autoSave:        autoSave,
+			cleanupTimer:    time.NewTicker(1 * time.Hour),
+			lastRequestTime: make(map[string]time.Time),
 		}
 
 		// Try to load existing config
@@ -994,6 +997,7 @@ func (m *IPManager) Close() error {
 type RequestContext struct {
 	IP            string
 	Path          string
+	FullURL       string
 	Method        string
 	UserAgent     string
 	Referer       string
@@ -1017,6 +1021,11 @@ func (m *IPManager) ValidateRequest(ctx *RequestContext) (allowed bool, reason s
 	rule := m.GetIPRuleByIP(ctx.IP)
 	if rule == nil {
 		return true, ""
+	}
+
+	// Ban takes precedence over everything
+	if rule.Type == "ban" {
+		return false, "ip_banned"
 	}
 
 	// Whitelist override
@@ -1072,6 +1081,23 @@ func (m *IPManager) ValidateRequest(ctx *RequestContext) (allowed bool, reason s
 	// Check protocol requirements
 	if !m.checkProtocolRequirements(rule, ctx) {
 		return false, "protocol_requirement_failed"
+	}
+
+	// Check request interval (must be done with write lock for updating)
+	if rule.MinRequestInterval > 0 {
+		lastTime, exists := m.lastRequestTime[ctx.IP]
+		if exists {
+			interval := ctx.Timestamp.Sub(lastTime)
+			if interval < time.Duration(rule.MinRequestInterval)*time.Millisecond {
+				return false, "request_too_fast"
+			}
+		}
+		// Update last request time - need to upgrade to write lock
+		m.mu.RUnlock()
+		m.mu.Lock()
+		m.lastRequestTime[ctx.IP] = ctx.Timestamp
+		m.mu.Unlock()
+		m.mu.RLock()
 	}
 
 	return true, ""
@@ -1293,8 +1319,14 @@ func (m *IPManager) checkSizeLimits(rule *IPRule, ctx *RequestContext) bool {
 		return false
 	}
 
-	if rule.MaxURLLength > 0 && len(ctx.Path) > rule.MaxURLLength {
-		return false
+	if rule.MaxURLLength > 0 {
+		urlLen := len(ctx.FullURL)
+		if urlLen == 0 {
+			urlLen = len(ctx.Path)
+		}
+		if urlLen > rule.MaxURLLength {
+			return false
+		}
 	}
 
 	if rule.MaxHeaderSize > 0 {
@@ -1360,14 +1392,17 @@ func matchPattern(text, pattern string) bool {
 	if len(pattern) == 0 {
 		return len(text) == 0
 	}
-	// Simple contains check for now
-	if pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
-		return len(text) >= len(pattern)-2
+	// Contains check (both sides wildcard)
+	if len(pattern) >= 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
+		substr := pattern[1 : len(pattern)-1]
+		return strings.Contains(text, substr)
 	}
+	// Suffix check (starts with *)
 	if pattern[0] == '*' {
 		suffix := pattern[1:]
 		return len(text) >= len(suffix) && text[len(text)-len(suffix):] == suffix
 	}
+	// Prefix check (ends with *)
 	if pattern[len(pattern)-1] == '*' {
 		prefix := pattern[:len(pattern)-1]
 		return len(text) >= len(prefix) && text[:len(prefix)] == prefix
