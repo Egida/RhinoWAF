@@ -1,6 +1,6 @@
- RhinoWAF
+# RhinoWAF
 
-High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.
+**High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
 **Version**: 2.0 | **Status**: Tested and working well. | **Last Updated**: October 21, 2025
 
