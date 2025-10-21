@@ -424,26 +424,18 @@ go build -o rhinowaf ./cmd/rhinowaf
 ```
 
 ### What's Enabled by Default
-- ✅ **Challenge System** - JavaScript challenges (2-second delay)
-- ✅ **Browser Fingerprinting** - Bot network detection
-- ✅ **Geolocation Blocking** - High-risk countries challenged
-- ✅ **Proxy/Tor Blocking** - Blocks proxies, Tor, hosting providers
-- ✅ **Rate Limiting** - 100 requests/IP, 10 concurrent connections
-- ✅ **User-Agent Filtering** - Blocks empty/suspicious UAs
+-  **Challenge System** - JavaScript challenges (2-second delay)
+-  **Browser Fingerprinting** - Bot network detection
+-  **Geolocation Blocking** - High-risk countries challenged
+-  **Proxy/Tor Blocking** - Blocks proxies, Tor, hosting providers
+-  **Rate Limiting** - 100 requests/IP, 10 concurrent connections
+-  **User-Agent Filtering** - Blocks empty/suspicious UAs
 
 ### Configuration Files
 - `cmd/rhinowaf/main.go` - Application configuration
 - `config/ip_rules.json` - IP/geo rules (v2.0, production defaults)
 - `config/geoip.json` - GeoIP database (12 CIDR ranges)
 
-### Documentation
-- **`PRODUCTION_CONFIG.md`** - Complete production configuration guide
-- **`DEPLOYMENT_CHECKLIST.md`** - Step-by-step deployment checklist
-- **`docs/CHALLENGE_SYSTEM.md`** - Challenge system documentation
-- **`docs/FINGERPRINTING.md`** - Browser fingerprinting guide
-- **`docs/IP_RULES.md`** - Complete IP rules reference
-- **`docs/CHALLENGE_EXAMPLES.md`** - Challenge configuration examples
-- **`docs/FINGERPRINTING_EXAMPLES.md`** - Fingerprinting examples
 
 ### Optional: Add CAPTCHA
 For better user experience, add CAPTCHA providers:
