@@ -177,5 +177,5 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.0 | **Status**: Production-Ready | **Last Updated**: October 20, 2025
+**Version**: 2.1 | **Status**: Production-ready with security hardening | **Last Updated**: October 31, 2025
 

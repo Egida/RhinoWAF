@@ -32,18 +32,30 @@ func main() {
 
 	// Configure CAPTCHA providers from environment variables
 	if hcaptchaKey := os.Getenv("HCAPTCHA_SITE_KEY"); hcaptchaKey != "" {
-		challengeMgr.SetHCaptcha(hcaptchaKey, os.Getenv("HCAPTCHA_SECRET"))
+		secret := os.Getenv("HCAPTCHA_SECRET")
+		if secret == "" {
+			log.Printf("Warning: HCAPTCHA_SITE_KEY set but HCAPTCHA_SECRET is empty")
+		} else {
+			challengeMgr.SetHCaptcha(hcaptchaKey, secret)
+			log.Printf("✓ hCaptcha configured")
+		}
 	}
 	if turnstileKey := os.Getenv("TURNSTILE_SITE_KEY"); turnstileKey != "" {
-		challengeMgr.SetTurnstile(turnstileKey, os.Getenv("TURNSTILE_SECRET"))
+		secret := os.Getenv("TURNSTILE_SECRET")
+		if secret == "" {
+			log.Printf("Warning: TURNSTILE_SITE_KEY set but TURNSTILE_SECRET is empty")
+		} else {
+			challengeMgr.SetTurnstile(turnstileKey, secret)
+			log.Printf("✓ Cloudflare Turnstile configured")
+		}
 	}
 
 	// Initialize fingerprint tracker (CONFIGURABLE)
 	// For production with strict bot blocking: Set BlockOnExceed=true, RequireClientData=true
 	// For testing or API-friendly mode: Set BlockOnExceed=false, RequireClientData=false
 	fingerprintConfig := fingerprint.Config{
-		Enabled:              true,  // Browser fingerprinting enabled
-		MaxIPsPerFingerprint: 5,     // Max IPs allowed per fingerprint (detect bot networks)
+		Enabled:              true, // Browser fingerprinting enabled
+		MaxIPsPerFingerprint: 5,    // Max IPs allowed per fingerprint (detect bot networks)
 		MaxAgeForReuse:       24 * time.Hour,
 		SuspiciousThreshold:  3,     // Flag as suspicious when 3+ IPs share fingerprint
 		BlockOnExceed:        false, // Set true for production: Block IPs exceeding limits
@@ -87,26 +99,26 @@ func main() {
 	handler := fingerprintMW.Handler(challengeMW.Handler(mux))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                     RhinoWAF v2.0                          ║")
+	fmt.Println("║                     RhinoWAF v2.1                          ║")
 	fmt.Println("║              Production Web Application Firewall            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
-	fmt.Println("🛡️  Security Features:")
-	fmt.Println("  ✓ DDoS Protection with Rate Limiting")
-	fmt.Println("  ✓ Advanced IP Rule Enforcement (60+ fields)")
-	fmt.Println("  ✓ Challenge System (JavaScript PoW)")
-	fmt.Println("  ✓ Browser Fingerprinting (ACTIVE)")
-	fmt.Println("  ✓ Geolocation-based Blocking")
-	fmt.Println("  ✓ Proxy/Tor/VPN Detection")
-	fmt.Println("  ✓ Input Sanitization & XSS Protection")
+	fmt.Println("  Security Features:")
+	fmt.Println("   DDoS Protection with Rate Limiting")
+	fmt.Println("   Advanced IP Rule Enforcement (60+ fields)")
+	fmt.Println("   Challenge System (JavaScript PoW)")
+	fmt.Println("   Browser Fingerprinting (ACTIVE)")
+	fmt.Println("   Geolocation-based Blocking")
+	fmt.Println("   Proxy/Tor/VPN Detection")
+	fmt.Println("   Input Sanitization & XSS Protection")
 	fmt.Println("")
-	fmt.Println("📊 Status:")
+	fmt.Println(" Status:")
 	fmt.Println("  • WAF Listening: http://localhost:8080")
 	fmt.Println("  • Attack Logs: ./logs/ddos.log")
 	fmt.Println("  • Backend Proxy: http://localhost:9000")
 	fmt.Println("")
-	fmt.Println("🚀 Ready for production traffic!")
+	fmt.Println("Ready")
 	fmt.Println("")
-	
+
 	log.Fatal(http.ListenAndServe(":8080", handler))
 }

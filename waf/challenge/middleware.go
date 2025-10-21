@@ -48,7 +48,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 
 		if m.requiresChallenge(r.URL.Path) || token != "" {
 			session := m.manager.CreateSession(ip, m.config.DefaultType, m.config.Difficulty)
-			m.setTokenCookie(w, session.Token)
+			m.setTokenCookie(w, r, session.Token)
 			m.manager.RenderChallengePage(w, session)
 			return
 		}
@@ -159,14 +159,14 @@ func (m *Middleware) getTokenFromCookie(r *http.Request) string {
 	return cookie.Value
 }
 
-func (m *Middleware) setTokenCookie(w http.ResponseWriter, token string) {
+func (m *Middleware) setTokenCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "waf_challenge_token",
 		Value:    token,
 		Path:     "/",
 		MaxAge:   3600,
 		HttpOnly: true,
-		Secure:   false,
+		Secure:   r.TLS != nil, // Auto-detect HTTPS
 		SameSite: http.SameSiteLaxMode,
 	})
 }
