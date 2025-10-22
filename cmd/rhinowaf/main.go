@@ -52,7 +52,6 @@ func main() {
 
 	// Initialize fingerprint tracker (CONFIGURABLE)
 	// For production with strict bot blocking: Set BlockOnExceed=true, RequireClientData=true
-	// For testing or API-friendly mode: Set BlockOnExceed=false, RequireClientData=false
 	fingerprintConfig := fingerprint.Config{
 		Enabled:              true, // Browser fingerprinting enabled
 		MaxIPsPerFingerprint: 5,    // Max IPs allowed per fingerprint (detect bot networks)
