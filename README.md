@@ -56,7 +56,7 @@
 -  **User-Agent Filtering**: Blocks empty/suspicious UAs
 -  **GeoIP Database**: 12 CIDR ranges covering major regions
 
-### **Planned Enhancements**
+### **Planned Enhancements**(V3.0+)
 - Real-time config hot-reload
 - Distributed rate limiting (Redis)
 - Web UI for rule management
@@ -477,11 +477,63 @@ Edit `config/ip_rules.json` to customize:
 - Proxy/Tor blocking
 - User-agent filtering
 
+## Changelog
+
+### **v2.1** - Security Hardening (October 22, 2025)
+
+**Security Fixes:**
+- **Secure Cookies**: Auto-detect HTTPS and set `Secure=true` flag on challenge cookies (prevents MITM attacks)
+- **API Secret Validation**: Added warnings when CAPTCHA site keys are present but secrets are missing (prevents silent misconfigurations)
+- **IP Spoofing Protection**: New `waf/security` package validates X-Forwarded-For headers against trusted proxy list (prevents IP-based bypass)
+  - Default trusted: localhost + RFC1918 private networks (10.x, 172.16.x, 192.168.x)
+  - Configurable via `security.SetTrustedProxies([]string{...})`
+
+**Files Changed:**
+- `cmd/rhinowaf/main.go` - Version 2.1, CAPTCHA secret validation
+- `waf/challenge/middleware.go` - Secure cookie auto-detection
+- `waf/security/ip.go` - NEW trusted proxy validation module (97 lines)
+
+**Known Issues (deferred to v2.2):**
+- Timing attack vulnerability in token comparisons
+- No rate limiting on `/fingerprint/collect` endpoint
+
+**Upgrade:** Drop-in replacement, no config changes required.
+
+---
+
+### **v2.2 Roadmap** (Planned)
+
+**Security Enhancements:**
+- Constant-time comparison for session/token validation (prevent timing attacks)
+- Rate limiting on fingerprint collection endpoint (5 req/min per IP)
+- CSRF token support for challenge forms
+- Content Security Policy (CSP) headers
+
+**Performance:**
+- Redis-backed session store for multi-server deployments
+- Connection pooling for database queries
+- Lazy-loading for GeoIP database
+
+**Features:**
+- Hot-reload configuration without restart
+- Web UI for rule management
+- Challenge history and reputation scoring
+- Custom challenge templates
+- Webhook notifications for attack events
+
+**Observability:**
+- Prometheus metrics endpoint
+- Grafana dashboard templates
+- Real-time attack visualization
+- Export logs to ELK stack
+
+---
+
 ## License
 
 AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.1 | **Status**: Production-ready with security hardening | **Last Updated**: October 31, 2025
+**Version**: 2.1 | **Status**: Production-ready with security hardening | **Last Updated**: October 22, 2025
 
