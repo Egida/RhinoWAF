@@ -477,39 +477,21 @@ Edit `config/ip_rules.json` to customize:
 - Proxy/Tor blocking
 - User-agent filtering
 
-## Changelog
+## Changelog & Roadmap
 
-### **v2.1** - Security Hardening (October 22, 2025)
+**v2.1** (October 22, 2025) - Security Hardening
 
-**Security Fixes:**
-- **Secure Cookies**: Auto-detect HTTPS and set `Secure=true` flag on challenge cookies (prevents MITM attacks)
-- **API Secret Validation**: Added warnings when CAPTCHA site keys are present but secrets are missing (prevents silent misconfigurations)
-- **IP Spoofing Protection**: New `waf/security` package validates X-Forwarded-For headers against trusted proxy list (prevents IP-based bypass)
-  - Default trusted: localhost + RFC1918 private networks (10.x, 172.16.x, 192.168.x)
-  - Configurable via `security.SetTrustedProxies([]string{...})`
+- Secure cookie handling with auto-detect HTTPS
+- CAPTCHA secret validation warnings
+- IP spoofing protection via trusted proxy validation
+- New waf/security package for X-Forwarded-For validation
 
-**Files Changed:**
-- `cmd/rhinowaf/main.go` - Version 2.1, CAPTCHA secret validation
-- `waf/challenge/middleware.go` - Secure cookie auto-detection
-- `waf/security/ip.go` - NEW trusted proxy validation module (97 lines)
+**v2.2** (Planned) - Maintenance Release
 
-**Known Issues (deferred to v2.2):**
-- Timing attack vulnerability in token comparisons
-- No rate limiting on `/fingerprint/collect` endpoint
-
-**Upgrade:** Drop-in replacement, no config changes required.
-
----
-
-### **v2.2 Roadmap** (Small Bug Fixes)
-
-**Security Patches:**
-- Constant-time comparison for token validation (prevent timing attacks)
-- Rate limiting on `/fingerprint/collect` endpoint (5 req/min per IP)
-
-**Minor Fixes:**
-- Improve CAPTCHA error messages
-- Better handling of malformed headers
+- Constant-time token comparison
+- Rate limiting on /fingerprint/collect (5 req/min per IP)
+- Improved CAPTCHA error messages
+- Better malformed header handling
 
 ---
 
