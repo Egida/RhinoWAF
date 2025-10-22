@@ -481,17 +481,17 @@ Edit `config/ip_rules.json` to customize:
 
 **v2.1** (October 22, 2025) - Security Hardening
 
-- Secure cookie handling with auto-detect HTTPS
-- CAPTCHA secret validation warnings
-- IP spoofing protection via trusted proxy validation
-- New waf/security package for X-Forwarded-For validation
+- Secure cookie handling with auto-detect HTTPS (Defends against MITM attacks)
+- CAPTCHA secret validation warnings (Prevents silent misconfigurations)
+- IP spoofing protection via trusted proxy validation (Blocks X-Forwarded-For bypass attacks)
+- New waf/security package for X-Forwarded-For validation (Validates requests against trusted proxy list)
 
 **v2.2** (Planned) - Maintenance Release
 
-- Constant-time token comparison
-- Rate limiting on /fingerprint/collect (5 req/min per IP)
-- Improved CAPTCHA error messages
-- Better malformed header handling
+- Constant-time token comparison (Prevents timing attacks on token validation)
+- Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
+- Improved CAPTCHA error messages (Better user experience on failed challenges)
+- Better malformed header handling (Prevents header injection attacks)
 
 ---
 
