@@ -117,7 +117,7 @@ func main() {
 	fmt.Println("  • Attack Logs: ./logs/ddos.log")
 	fmt.Println("  • Backend Proxy: http://localhost:9000")
 	fmt.Println("")
-	fmt.Println("Ready")
+	fmt.Println("Ready.")
 	fmt.Println("")
 
 	log.Fatal(http.ListenAndServe(":8080", handler))
