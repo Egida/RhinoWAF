@@ -501,31 +501,15 @@ Edit `config/ip_rules.json` to customize:
 
 ---
 
-### **v2.2 Roadmap** (Planned)
+### **v2.2 Roadmap** (Small Bug Fixes)
 
-**Security Enhancements:**
-- Constant-time comparison for session/token validation (prevent timing attacks)
-- Rate limiting on fingerprint collection endpoint (5 req/min per IP)
-- CSRF token support for challenge forms
-- Content Security Policy (CSP) headers
+**Security Patches:**
+- Constant-time comparison for token validation (prevent timing attacks)
+- Rate limiting on `/fingerprint/collect` endpoint (5 req/min per IP)
 
-**Performance:**
-- Redis-backed session store for multi-server deployments
-- Connection pooling for database queries
-- Lazy-loading for GeoIP database
-
-**Features:**
-- Hot-reload configuration without restart
-- Web UI for rule management
-- Challenge history and reputation scoring
-- Custom challenge templates
-- Webhook notifications for attack events
-
-**Observability:**
-- Prometheus metrics endpoint
-- Grafana dashboard templates
-- Real-time attack visualization
-- Export logs to ELK stack
+**Minor Fixes:**
+- Improve CAPTCHA error messages
+- Better handling of malformed headers
 
 ---
 
