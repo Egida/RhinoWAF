@@ -274,7 +274,7 @@ func InitIPManager(configPath string, autoSave bool) error {
 		// Start background cleanup of expired bans
 		go ipManager.cleanupExpiredRules()
 
-		log.Printf("IP Manager initialized: %d banned, %d whitelisted, %d monitored, %d geo rules",
+		log.Printf("IP Manager loaded: %d banned IPs, %d whitelisted IPs, %d monitored IPs, %d geolocation rules",
 			len(ipManager.bannedMap), len(ipManager.whitelistMap), len(ipManager.monitoredMap), len(ipManager.geoRulesMap))
 	})
 
@@ -679,7 +679,7 @@ func (m *IPManager) cleanupExpiredRules() {
 		m.mu.Unlock()
 
 		if removed > 0 {
-			log.Printf("IP Manager: Cleaned up %d expired bans", removed)
+			log.Printf("Removed %d expired IP bans during routine cleanup", removed)
 			if m.autoSave {
 				m.save()
 			}

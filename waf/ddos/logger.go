@@ -172,7 +172,7 @@ func InitLogger(config *LoggerConfig) error {
 			hf, herr := os.OpenFile(config.HumanReadablePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 			if herr != nil {
 				// Don't fail initialization due to human-readable log issues; just disable it
-				log.Printf("Warning: failed to open human-readable log: %v", herr)
+				log.Printf("Note: Could not create human-readable log file - %v (only JSON logs will be available)", herr)
 			} else {
 				humanFile = hf
 				humanWriter = bufio.NewWriterSize(hf, 64*1024)
@@ -310,9 +310,9 @@ func LogBurstAttack(ip string, entry *IPEntry, requestCount int) {
 		BurstDetected:     true,
 		SlowConnWarnings:  entry.SlowConnWarnings,
 		BytesSent:         entry.BytesSent,
-		Message: fmt.Sprintf("BURST ATTACK DETECTED: %d requests in rapid succession (limit: %d, %d%% over)",
+		Message: fmt.Sprintf("Burst attack detected: %d requests received in rapid succession (limit: %d, %d%% over)",
 			requestCount, cfg.BurstLimit, excessPercent),
-		RecommendedAction: "IMMEDIATE_BLOCK - Consider permanent ban or CAPTCHA challenge",
+		RecommendedAction: "Immediate blocking recommended - Consider implementing CAPTCHA challenge for this IP",
 		Tags:              []string{"burst", "critical_threat"},
 	}
 
@@ -349,9 +349,9 @@ func LogSlowlorisAttack(ip string, entry *IPEntry, staleConnections int) {
 		LastSeen:          time.Unix(entry.LastSeen, 0).Format(time.RFC3339),
 		SlowConnWarnings:  entry.SlowConnWarnings,
 		BytesSent:         entry.BytesSent,
-		Message: fmt.Sprintf("Slowloris attack detected: %d stale connections exceeding %ds timeout",
+		Message: fmt.Sprintf("Slowloris-style attack detected: %d stale connections exceeding %ds timeout",
 			staleConnections, cfg.SlowLorisMaxConnTime),
-		RecommendedAction: "Monitor for distributed slow attacks. Consider stricter connection limits.",
+		RecommendedAction: "Monitor for distributed slow-rate attacks. Consider implementing stricter connection limits.",
 		Tags:              []string{"slowloris", "slow_dos"},
 	}
 
@@ -381,9 +381,9 @@ func LogReputationBlock(ip string, entry *IPEntry) {
 		PreviousBlocks:    entry.ViolationCount,
 		SlowConnWarnings:  entry.SlowConnWarnings,
 		BytesSent:         entry.BytesSent,
-		Message: fmt.Sprintf("REPEAT OFFENDER: IP blocked due to poor reputation (%d, threshold: %d) after %d violations",
+		Message: fmt.Sprintf("Repeat offender blocked: IP has poor reputation score (%d, threshold: %d) with %d previous violations",
 			entry.Reputation, cfg.ReputationThreshold, entry.ViolationCount),
-		RecommendedAction: "Consider permanent ban. This IP has a history of attacks.",
+		RecommendedAction: "This IP has a history of malicious behavior. Consider implementing a permanent block at the firewall level.",
 		Tags:              []string{"reputation", "repeat_offender"},
 	}
 
@@ -403,7 +403,7 @@ func LogGeoBlock(ip, countryCode string) {
 		"ip":           ip,
 		"country_code": countryCode,
 		"severity":     "medium",
-		"message":      fmt.Sprintf("IP blocked due to geolocation rule: %s", countryCode),
+		"message":      fmt.Sprintf("Access blocked due to geolocation policy: %s", countryCode),
 		"tags":         []string{"geoblocking", "access_control"},
 	}
 
@@ -430,8 +430,8 @@ func LogDistributedAttack() {
 		"suspicious_ips":      stats["suspicious_ips"],
 		"throttle_level":      stats["throttle_level"],
 		"throttle_multiplier": stats["throttle_multiplier"],
-		"message":             fmt.Sprintf("Distributed DDoS attack detected: %d RPS from %d IPs (limit: %d RPS)", stats["current_rps"], stats["active_ips"], cfg.GlobalRateLimit),
-		"recommended_action":  "Adaptive throttling enabled. Consider enabling upstream CDN (Cloudflare) for additional protection.",
+		"message":             fmt.Sprintf("Distributed DDoS attack detected: %d requests/second from %d unique IPs (global limit: %d rps)", stats["current_rps"], stats["active_ips"], cfg.GlobalRateLimit),
+		"recommended_action":  "Adaptive throttling has been activated automatically. For additional protection, consider enabling upstream CDN services like Cloudflare.",
 		"tags":                []string{"distributed_ddos", "critical_threat", "multi_source"},
 	}
 
@@ -496,12 +496,12 @@ func (l *Logger) flushBuffer() {
 
 	for _, event := range l.eventBuffer {
 		if err := l.jsonEncoder.Encode(event); err != nil {
-			log.Printf("Failed to write DDoS log: %v", err)
+			log.Printf("Error writing to attack log: %v", err)
 		}
 		if l.humanEnabled && l.humanWriter != nil {
 			line := l.formatHumanLine(event)
 			if _, err := l.humanWriter.WriteString(line + "\n"); err != nil {
-				log.Printf("Failed to write human-readable log: %v", err)
+				log.Printf("Error writing to human-readable log: %v", err)
 			}
 		}
 	}
@@ -510,13 +510,13 @@ func (l *Logger) flushBuffer() {
 
 	if l.bufWriter != nil {
 		if err := l.bufWriter.Flush(); err != nil {
-			log.Printf("Failed to flush log buffer: %v", err)
+			log.Printf("Error flushing log buffer: %v", err)
 		}
 	}
 
 	if l.humanWriter != nil {
 		if err := l.humanWriter.Flush(); err != nil {
-			log.Printf("Failed to flush human-readable buffer: %v", err)
+			log.Printf("Error flushing human-readable log buffer: %v", err)
 		}
 	}
 
@@ -556,7 +556,7 @@ func (l *Logger) checkRotation() {
 
 	fileInfo, err := l.file.Stat()
 	if err != nil {
-		log.Printf("Failed to stat log file: %v", err)
+		log.Printf("Could not check log file size: %v", err)
 		return
 	}
 
@@ -595,7 +595,7 @@ func (l *Logger) rotateLog() {
 	l.file.Close()
 
 	if err := os.Rename(oldPath, newPath); err != nil {
-		log.Printf("Failed to rotate log: %v", err)
+		log.Printf("Could not rotate log file: %v", err)
 		return
 	}
 
@@ -605,7 +605,7 @@ func (l *Logger) rotateLog() {
 
 	file, err := os.OpenFile(oldPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 	if err != nil {
-		log.Printf("Failed to open new log file: %v", err)
+		log.Printf("Could not create new log file after rotation: %v", err)
 		return
 	}
 
@@ -632,14 +632,14 @@ func (l *Logger) compressLogFile(filename string) {
 
 	srcFile, err := os.Open(filename)
 	if err != nil {
-		log.Printf("Failed to open file for compression: %v", err)
+		log.Printf("Could not compress log file: %v", err)
 		return
 	}
 	defer srcFile.Close()
 
 	gzFile, err := os.Create(gzFilename)
 	if err != nil {
-		log.Printf("Failed to create gzip file: %v", err)
+		log.Printf("Could not create compressed log file: %v", err)
 		return
 	}
 	defer gzFile.Close()
@@ -648,12 +648,12 @@ func (l *Logger) compressLogFile(filename string) {
 	defer gzWriter.Close()
 
 	if _, err := io.Copy(gzWriter, srcFile); err != nil {
-		log.Printf("Failed to compress log: %v", err)
+		log.Printf("Error during log compression: %v", err)
 		return
 	}
 
 	os.Remove(filename)
-	log.Printf("Compressed and removed old log: %s -> %s", filename, gzFilename)
+	log.Printf("Log file compressed: %s -> %s", filename, gzFilename)
 }
 
 // cleanupOldLogs removes logs older than maxAgeDays
@@ -679,7 +679,7 @@ func (l *Logger) cleanupOldLogs() {
 
 		if fileInfo.ModTime().Before(cutoffTime) {
 			os.Remove(file)
-			log.Printf("Cleaned up old log: %s", file)
+			log.Printf("Old log file removed: %s", file)
 		}
 	}
 }
@@ -750,18 +750,18 @@ func (l *Logger) GetEventCount() int64 {
 // determineAction suggests an action based on attack severity
 func determineAction(entry *IPEntry, excessPercent int) string {
 	if entry.ViolationCount > 10 {
-		return "PERMANENT_BAN - Persistent attacker, consider firewall-level block"
+		return "Permanent ban recommended - Persistent attacker detected. Consider implementing a firewall-level block."
 	}
 	if excessPercent > 500 {
-		return "EXTENDED_BLOCK - Severe violation, extend block to 1+ hours"
+		return "Extended block recommended - Severe violation detected. Consider extending block duration to 1+ hours."
 	}
 	if excessPercent > 200 {
-		return "MONITOR_CLOSELY - High excess rate, watch for escalation"
+		return "Close monitoring required - High excess rate detected. Watch for potential escalation."
 	}
 	if entry.ViolationCount > 5 {
-		return "REPUTATION_WATCH - Multiple violations, likely malicious"
+		return "Reputation monitoring active - Multiple violations indicate likely malicious intent."
 	}
-	return "STANDARD_BLOCK - Temporary block, monitor for repeat offense"
+	return "Standard temporary block applied - Monitor for repeat offenses."
 }
 
 // formatHumanLine converts an event (struct or map) to a concise human-readable line

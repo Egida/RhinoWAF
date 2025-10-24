@@ -44,7 +44,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 			fp.Hash = cookie.Value
 			allowed, reason := m.tracker.Check(ip, fp)
 			if !allowed {
-				http.Error(w, fmt.Sprintf("Access Denied: %s", reason), http.StatusForbidden)
+				http.Error(w, fmt.Sprintf("Access blocked: %s", reason), http.StatusForbidden)
 				return
 			}
 
@@ -62,7 +62,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 
 		// Non-HTML request without fingerprint (API, JSON, etc.)
 		if m.tracker.config.RequireClientData {
-			http.Error(w, "Fingerprint required", http.StatusForbidden)
+			http.Error(w, "Browser verification is required to access this resource", http.StatusForbidden)
 			return
 		}
 
@@ -76,7 +76,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 // CollectHandler receives fingerprint data from client-side JS
 func (m *Middleware) CollectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "This endpoint only accepts POST requests", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -95,7 +95,7 @@ func (m *Middleware) CollectHandler(w http.ResponseWriter, r *http.Request) {
 
 	var data FingerprintData
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		http.Error(w, "Invalid fingerprint data", http.StatusBadRequest)
+		http.Error(w, "Unable to process fingerprint data. Please refresh the page.", http.StatusBadRequest)
 		return
 	}
 
@@ -149,7 +149,7 @@ func (m *Middleware) serveCollectionPage(w http.ResponseWriter, r *http.Request)
 	html := `<!DOCTYPE html>
 <html>
 <head>
-    <title>Security Check</title>
+    <title>Security Verification</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -187,10 +187,10 @@ func (m *Middleware) serveCollectionPage(w http.ResponseWriter, r *http.Request)
 </head>
 <body>
     <div class="container">
-        <h2>🛡️ Security Verification</h2>
+        <h2>Security Verification</h2>
         <div class="spinner"></div>
-        <p>Verifying your browser security...</p>
-        <p style="font-size: 12px; color: #999;">This only takes a moment</p>
+        <p>Please wait while we verify your browser security...</p>
+        <p style="font-size: 12px; color: #999;">This will only take a moment</p>
     </div>
 
     <script>
@@ -306,12 +306,12 @@ func (m *Middleware) serveCollectionPage(w http.ResponseWriter, r *http.Request)
                 window.location.href = window.location.pathname + window.location.search;
             } else {
                 document.querySelector('.container').innerHTML = 
-                    '<h2>❌ Access Denied</h2><p>' + (data.reason || 'Unknown error') + '</p>';
+                    '<h2>Access Blocked</h2><p>' + (data.reason || 'Unable to verify browser') + '</p>';
             }
         })
         .catch(err => {
             document.querySelector('.container').innerHTML = 
-                '<h2>⚠️ Error</h2><p>Failed to verify browser. Please try again.</p>';
+                '<h2>Verification Error</h2><p>Could not complete verification. Please refresh the page and try again.</p>';
         });
     })();
     </script>

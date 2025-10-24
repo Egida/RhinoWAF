@@ -2,7 +2,7 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.2 | **Status**: Production-ready security | **Last Updated**: October 24, 2025
+**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 30, 2025
 
 ## Features
 
@@ -47,7 +47,7 @@
 - **Headless Browser Blocking**: Requires canvas/WebGL data that bots often fail
 - **Automatic Collection**: Transparent 1-2 second verification on first visit
 
-### **Production Status (v2.0)**
+### **Production Status (v2.3)**
 -  **Challenge System**: Enabled by default (JavaScript challenges)
 -  **Browser Fingerprinting**: Enabled by default (bot network detection)
 -  **Geolocation Blocking**: Active with 4 geo rules (CN, RU, IR challenge; KP blocked)
@@ -55,9 +55,10 @@
 -  **Rate Limiting**: 100 req/IP, 10 concurrent connections
 -  **User-Agent Filtering**: Blocks empty/suspicious UAs
 -  **GeoIP Database**: 12 CIDR ranges covering major regions
+-  **Prometheus Metrics**: Real-time observability at `/metrics` endpoint
+-  **Hot-Reload**: Live configuration updates without restart
 
 ### **Planned Enhancements**(V3.0+)
-- Real-time config hot-reload
 - Distributed rate limiting (Redis)
 - Web UI for rule management
 - Challenge history and reputation scoring
@@ -75,13 +76,31 @@ go build -o rhinowaf ./cmd/rhinowaf
 
 **Expected startup output:**
 ```
-IP Manager initialized: 0 banned, 0 whitelisted, 0 monitored, 4 geo rules
-RhinoWAF on :8080
-DDoS attack logs: ./logs/ddos.log
-Challenge system: ✓ Enabled
-Fingerprint tracking: ✓ Enabled
-Geolocation blocking: ✓ Active
-Proxy/Tor blocking: ✓ Enabled
+╔════════════════════════════════════════════════════════════╗
+║                     RhinoWAF v2.3                          ║
+║              Production Web Application Firewall            ║
+╚════════════════════════════════════════════════════════════╝
+
+  Security Features:
+   DDoS Protection with Rate Limiting
+   Advanced IP Rule Enforcement (60+ fields)
+   Challenge System (JavaScript PoW)
+   Browser Fingerprinting (ACTIVE)
+   Geolocation-based Blocking
+   Proxy/Tor/VPN Detection
+   Input Sanitization & XSS Protection
+   Hot-Reload Configuration (Auto & Manual)
+
+ Status:
+  • WAF Listening: http://localhost:8080
+  • Metrics Endpoint: http://localhost:8080/metrics
+  • Reload Endpoint: POST http://localhost:8080/reload
+  • Auto-Reload: Watching config files
+  • Manual Reload: kill -SIGHUP <pid>
+  • Attack Logs: ./logs/ddos.log
+  • Backend Proxy: http://localhost:9000
+
+Ready.
 ```
 
 Server runs on `:8080`. Attack logs: `./logs/ddos.log`
@@ -333,6 +352,135 @@ curl http://localhost:8080/fingerprint/stats
 
 See [docs/FINGERPRINTING.md](docs/FINGERPRINTING.md) for full documentation.
 
+## Prometheus Metrics (v2.3)
+
+RhinoWAF exposes comprehensive metrics for monitoring and alerting:
+
+```bash
+# View all metrics
+curl http://localhost:8080/metrics
+```
+
+### Available Metrics
+
+**Request Metrics:**
+- `rhinowaf_requests_total{status}` - Total requests (counter with allowed/blocked labels)
+- `rhinowaf_requests_blocked{reason}` - Blocked requests by reason (rate_limit, ip_rule, malicious_input, etc.)
+- `rhinowaf_requests_allowed` - Allowed requests (counter)
+- `rhinowaf_request_duration_seconds` - Request processing time (histogram)
+
+**Challenge Metrics:**
+- `rhinowaf_challenges_issued` - Total challenges issued (counter)
+- `rhinowaf_challenges_passed` - Successfully completed challenges (counter)
+- `rhinowaf_challenges_failed` - Failed challenge attempts (counter)
+- `rhinowaf_challenge_sessions` - Active challenge sessions (gauge)
+
+**Fingerprint Metrics:**
+- `rhinowaf_fingerprints_collected` - Total fingerprints collected (counter)
+- `rhinowaf_fingerprints_blocked{reason}` - Blocked fingerprints by reason (counter)
+- `rhinowaf_fingerprint_rate_limited` - Rate limited fingerprint requests (counter)
+- `rhinowaf_active_fingerprints` - Currently tracked fingerprints (gauge)
+- `rhinowaf_suspicious_fingerprints` - Fingerprints flagged as suspicious (gauge)
+
+**Configuration Metrics:**
+- `rhinowaf_config_reloads{config_type}` - Configuration reload count (ip_rules, geoip)
+
+### Grafana Dashboard Example
+
+```promql
+# Request rate
+rate(rhinowaf_requests_total[5m])
+
+# Block rate by reason
+rate(rhinowaf_requests_blocked[5m]) by (reason)
+
+# 95th percentile latency
+histogram_quantile(0.95, rate(rhinowaf_request_duration_seconds_bucket[5m]))
+
+# Challenge pass rate
+rate(rhinowaf_challenges_passed[5m]) / rate(rhinowaf_challenges_issued[5m])
+```
+
+See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for full metrics documentation and Grafana dashboard examples.
+
+## Hot-Reload Configuration (v2.3)
+
+Update IP rules and GeoIP database without restarting RhinoWAF:
+
+### Automatic File Watching
+
+By default, RhinoWAF watches configuration files for changes:
+
+```bash
+# Edit config files - changes detected automatically
+vim config/ip_rules.json
+# Reload happens automatically after 2-second debounce
+```
+
+Logs will show:
+```
+✓ Detected change in config file: config/ip_rules.json
+✓ Successfully reloaded IP rules
+```
+
+### Manual Reload via HTTP Endpoint
+
+```bash
+# Trigger immediate reload
+curl -X POST http://localhost:8080/reload
+
+# Response:
+{
+  "status": "success",
+  "config": {
+    "ip_rules_path": "./config/ip_rules.json",
+    "geodb_path": "./config/geoip.json",
+    "debounce_time": "2s",
+    "last_reloads": {
+      "ip_rules": "2025-10-24T20:06:32Z",
+      "geoip": "2025-10-24T20:06:32Z"
+    }
+  }
+}
+```
+
+### Manual Reload via Signal
+
+```bash
+# Get RhinoWAF process ID
+ps aux | grep rhinowaf
+
+# Send SIGHUP signal
+kill -SIGHUP <pid>
+```
+
+Logs will show:
+```
+Received SIGHUP, reloading configurations...
+✓ Successfully reloaded IP rules
+✓ Successfully reloaded GeoIP database
+✓ All configurations reloaded successfully
+```
+
+### Configuration Validation
+
+Hot-reload includes JSON validation to prevent invalid configs:
+
+```bash
+# Invalid JSON in config file
+curl -X POST http://localhost:8080/reload
+
+# Response on error:
+{
+  "status": "error",
+  "error": "Invalid JSON in config/ip_rules.json: unexpected end of JSON input"
+}
+```
+
+**Safe Reload**: If validation fails, the previous configuration remains active.
+
+See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for detailed hot-reload documentation.
+
 ## Attack Logging
 
 Logs are written in JSON format to `./logs/ddos.log`:
@@ -457,8 +605,14 @@ export TURNSTILE_SECRET="your-secret"
 # Watch logs in real-time
 tail -f ./logs/ddos.log | jq '.message'
 
+# Check Prometheus metrics
+curl http://localhost:8080/metrics
+
 # Check fingerprint statistics
 curl http://localhost:8080/fingerprint/stats
+
+# Reload configuration
+curl -X POST http://localhost:8080/reload
 
 # Analyze attack severity
 jq -r '.severity' logs/ddos.log | sort | uniq -c
@@ -481,6 +635,18 @@ Edit `config/ip_rules.json` to customize:
 
 ### Released Versions
 
+#### **v2.3** — October 24, 2025
+*Performance & Observability Release*
+
+-  **Prometheus Metrics Endpoint** — 20+ metrics at `/metrics` for monitoring (requests, blocks, challenges, fingerprints, latency)
+-  **Hot-Reload Configuration** — Update IP rules/GeoIP without restart (auto file-watch + manual triggers)
+-  **HTTP Reload API** — `POST /reload` endpoint for programmatic configuration updates
+-  **SIGHUP Signal Handler** — Manual reload via `kill -SIGHUP` for DevOps workflows
+-  **Configuration Validation** — JSON validation with safe rollback on reload errors
+-  **Debounced File Watching** — 2-second debounce prevents reload storms during batch edits
+
+See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for detailed feature documentation.
+
 #### **v2.2** — October 24, 2025
 *Maintenance & Security Release*
 
@@ -501,20 +667,14 @@ Edit `config/ip_rules.json` to customize:
 
 ### Planned Releases
 
-#### **v2.3** — Performance & Observability
-*Target: Q1 2026*
-
--  **Real-time config hot-reload** — Modify IP rules/geo blocks without restart
--  **Prometheus metrics endpoint** — Request rates, block counts, latency percentiles
-
 #### **v3.0** — Enterprise Features
 *Target: Q2 2026*
 
--  **Distributed rate limiting** — Redis backend for multi-server deployments
--  **Web UI dashboard** — Rule management and live monitoring interface
--  **Challenge history & reputation scoring** — Track and block repeat offenders
--  **Multi-server session synchronization** — Shared fingerprint/session store
--  **Custom Lua scripting** — Advanced rule customization engine
+- **Distributed rate limiting** — Redis backend for multi-server deployments
+- **Web UI dashboard** — Rule management and live monitoring interface
+- **Challenge history & reputation scoring** — Track and block repeat offenders
+- **Multi-server session synchronization** — Shared fingerprint/session store
+- **Custom Lua scripting** — Advanced rule customization engine
 
 ---
 
@@ -524,5 +684,4 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.2 | **Status**: Production-ready with enhanced security | **Last Updated**: October 24, 2025
-
+**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 24, 2025

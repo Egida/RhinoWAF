@@ -60,7 +60,7 @@ func (m *Middleware) Handler(next http.Handler) http.Handler {
 
 func (m *Middleware) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		http.Error(w, "This endpoint only accepts POST requests", http.StatusMethodNotAllowed)
 		return
 	}
 

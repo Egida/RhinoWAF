@@ -13,7 +13,7 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 
 		// Validate headers for malformed or malicious content (prevents header injection)
 		if valid, reason := sanitize.ValidateHeaders(r); !valid {
-			http.Error(w, "RhinoWAF: Malformed headers - "+reason, http.StatusBadRequest)
+			http.Error(w, "Request blocked: "+reason, http.StatusBadRequest)
 			return
 		}
 
@@ -58,20 +58,20 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 
 			allowed, reason := ipMgr.ValidateRequest(ctx)
 			if !allowed {
-				http.Error(w, "RhinoWAF: Access denied - "+reason, http.StatusForbidden)
+				http.Error(w, "Access denied: "+reason, http.StatusForbidden)
 				return
 			}
 		}
 
 		// Check rate limits (L7/L4)
 		if !ddos.AllowL7(ip) || !ddos.AllowL4(ip) {
-			http.Error(w, "RhinoWAF: Attack Diffused/Mitigated", http.StatusTooManyRequests)
+			http.Error(w, "Too many requests. Please slow down and try again in a few moments.", http.StatusTooManyRequests)
 			return
 		}
 
 		// Check for malicious input FIRST (before sanitization removes patterns)
 		if sanitize.IsMalicious(r) {
-			http.Error(w, "RhinoWAF: Malicious input blocked", http.StatusForbidden)
+			http.Error(w, "Request blocked: Potentially harmful content detected", http.StatusForbidden)
 			return
 		}
 

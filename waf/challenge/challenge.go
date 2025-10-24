@@ -166,7 +166,7 @@ func (m *Manager) VerifyPOW(challenge, solution string, difficulty int) bool {
 
 func (m *Manager) VerifyHCaptcha(response, remoteIP string) (bool, error) {
 	if m.hcaptchaSecret == "" {
-		return false, fmt.Errorf("hCaptcha secret not configured")
+		return false, fmt.Errorf("hCaptcha verification is not configured on this server")
 	}
 
 	payload := fmt.Sprintf("response=%s&secret=%s&remoteip=%s", response, m.hcaptchaSecret, remoteIP)
@@ -192,7 +192,7 @@ func (m *Manager) VerifyHCaptcha(response, remoteIP string) (bool, error) {
 
 func (m *Manager) VerifyTurnstile(response, remoteIP string) (bool, error) {
 	if m.turnstileSecret == "" {
-		return false, fmt.Errorf("Turnstile secret not configured")
+		return false, fmt.Errorf("Cloudflare Turnstile verification is not configured on this server")
 	}
 
 	payload := fmt.Sprintf(`{"response":"%s","secret":"%s","remoteip":"%s"}`, response, m.turnstileSecret, remoteIP)
@@ -254,8 +254,8 @@ p { color: #666; line-height: 1.6; }
 </head>
 <body>
 <div class="box">
-<h1>Security Check</h1>
-<p>Verifying your browser...</p>
+<h1>Security Verification</h1>
+<p>We need to verify you're human. This will only take a moment...</p>
 <div class="spinner"></div>
 </div>
 <script>
@@ -293,10 +293,10 @@ p { color: #666; line-height: 1.6; }
 </head>
 <body>
 <div class="box">
-<h1>Security Check</h1>
-<p>Computing proof of work...</p>
+<h1>Security Verification</h1>
+<p>Please wait while we verify your browser security...</p>
 <div class="spinner"></div>
-<div id="status">Starting...</div>
+<div id="status">Initializing verification...</div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 <script>
@@ -328,7 +328,7 @@ function findSolution() {
         if (r.ok) {
           window.location.reload();
         } else {
-          document.getElementById('status').textContent = 'Verification failed';
+          document.getElementById('status').textContent = 'Verification unsuccessful. Please refresh the page.';
         }
       });
       break;
@@ -336,14 +336,14 @@ function findSolution() {
     
     nonce++;
     if (nonce %% 10000 === 0) {
-      document.getElementById('status').textContent = 'Tested ' + nonce + ' combinations...';
+      document.getElementById('status').textContent = 'Testing solution ' + nonce + '...';
       setTimeout(findSolution, 10);
       return;
     }
   }
   
   if (!found && nonce >= 1000000) {
-    document.getElementById('status').textContent = 'Failed to find solution';
+    document.getElementById('status').textContent = 'Unable to complete verification. Please refresh the page.';
   }
 }
 
@@ -370,8 +370,8 @@ p { color: #666; line-height: 1.6; margin-bottom: 30px; }
 </head>
 <body>
 <div class="box">
-<h1>Security Check</h1>
-<p>Please complete the CAPTCHA to continue:</p>
+<h1>Security Verification</h1>
+<p>Please complete the verification below to continue:</p>
 <div id="error-message" class="error"></div>
 <form id="captcha-form">
 <div class="h-captcha" data-sitekey="%s" data-callback="onCaptchaSuccess"></div>
@@ -428,8 +428,8 @@ p { color: #666; line-height: 1.6; margin-bottom: 30px; }
 </head>
 <body>
 <div class="box">
-<h1>Security Check</h1>
-<p>Please complete the challenge to continue:</p>
+<h1>Security Verification</h1>
+<p>Please complete the verification below to continue:</p>
 <div id="error-message" class="error"></div>
 <div class="cf-turnstile" data-sitekey="%s" data-callback="onTurnstileSuccess"></div>
 <input type="hidden" id="token" value="%s">

@@ -17,7 +17,7 @@ func init() {
 	target, _ := url.Parse(backendURL)
 	proxy = httputil.NewSingleHostReverseProxy(target)
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
-		fmt.Fprintf(w, "Backend unavailable: %v", err)
+		fmt.Fprintf(w, "Unable to connect to backend server. Please try again in a moment.")
 	}
 }
 
