@@ -481,10 +481,10 @@ Edit `config/ip_rules.json` to customize:
 
 **v2.2** (October 24, 2025) - Maintenance & Security Release
 
-- ✅ Constant-time token comparison (Prevents timing attacks on token validation)
-- ✅ Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
-- ✅ Improved CAPTCHA error messages (Better user experience on failed challenges)
-- ✅ Better malformed header handling (Prevents header injection attacks)
+-  Constant-time token comparison (Prevents timing attacks on token validation)
+-  Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
+-  Improved CAPTCHA error messages (Better user experience on failed challenges)
+-  Better malformed header handling (Prevents header injection attacks)
 
 **v2.1** (October 22, 2025) - Security Hardening
 
