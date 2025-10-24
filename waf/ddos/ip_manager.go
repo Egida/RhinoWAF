@@ -189,18 +189,18 @@ type IPConfig struct {
 
 // IPManager handles loading, saving, and querying IP management rules
 type IPManager struct {
-	mu            sync.RWMutex
-	configPath    string
-	config        *IPConfig
-	bannedMap     map[string]*IPRule
-	whitelistMap  map[string]*IPRule
-	monitoredMap  map[string]*IPRule
-	challengedMap map[string]*IPRule
-	throttledMap  map[string]*IPRule
-	geoRulesMap   map[string]*GeoRule // country code -> rule
-	asnRulesMap   map[string]*ASNRule // ASN -> rule
-	autoSave      bool
-	cleanupTimer  *time.Ticker
+	mu              sync.RWMutex
+	configPath      string
+	config          *IPConfig
+	bannedMap       map[string]*IPRule
+	whitelistMap    map[string]*IPRule
+	monitoredMap    map[string]*IPRule
+	challengedMap   map[string]*IPRule
+	throttledMap    map[string]*IPRule
+	geoRulesMap     map[string]*GeoRule // country code -> rule
+	asnRulesMap     map[string]*ASNRule // ASN -> rule
+	autoSave        bool
+	cleanupTimer    *time.Ticker
 	lastRequestTime map[string]time.Time // IP -> last request timestamp for interval checks
 }
 
@@ -1383,21 +1383,17 @@ func (m *IPManager) checkProtocolRequirements(rule *IPRule, ctx *RequestContext)
 	return true
 }
 
-// Helper functions
 func matchPattern(text, pattern string) bool {
-	// Simple wildcard matching (* for any chars)
 	if pattern == "*" {
 		return true
 	}
 	if len(pattern) == 0 {
 		return len(text) == 0
 	}
-	// Contains check (both sides wildcard)
 	if len(pattern) >= 2 && pattern[0] == '*' && pattern[len(pattern)-1] == '*' {
 		substr := pattern[1 : len(pattern)-1]
 		return strings.Contains(text, substr)
 	}
-	// Suffix check (starts with *)
 	if pattern[0] == '*' {
 		suffix := pattern[1:]
 		return len(text) >= len(suffix) && text[len(text)-len(suffix):] == suffix

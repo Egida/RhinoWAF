@@ -3,6 +3,7 @@ package challenge
 import (
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -110,14 +111,17 @@ func (m *Manager) CreateSession(ip string, challengeType ChallengeType, difficul
 func (m *Manager) GetSession(token string) (*Session, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	session, exists := m.sessions[token]
-	if !exists {
-		return nil, false
+
+	// Use constant-time comparison to prevent timing attacks
+	for storedToken, session := range m.sessions {
+		if subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) == 1 {
+			if time.Now().After(session.ExpiresAt) {
+				return nil, false
+			}
+			return session, true
+		}
 	}
-	if time.Now().After(session.ExpiresAt) {
-		return nil, false
-	}
-	return session, true
+	return nil, false
 }
 
 func (m *Manager) VerifySession(token string) bool {
@@ -361,18 +365,25 @@ body { font-family: system-ui; max-width: 600px; margin: 80px auto; padding: 20p
 .box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
 h1 { margin: 0 0 20px; color: #333; }
 p { color: #666; line-height: 1.6; margin-bottom: 30px; }
+.error { color: #d32f2f; background: #ffebee; padding: 12px; border-radius: 4px; margin: 20px 0; display: none; }
 </style>
 </head>
 <body>
 <div class="box">
 <h1>Security Check</h1>
 <p>Please complete the CAPTCHA to continue:</p>
+<div id="error-message" class="error"></div>
 <form id="captcha-form">
 <div class="h-captcha" data-sitekey="%s" data-callback="onCaptchaSuccess"></div>
 <input type="hidden" name="token" value="%s">
 </form>
 </div>
 <script>
+function showError(msg) {
+  var errorDiv = document.getElementById('error-message');
+  errorDiv.textContent = msg;
+  errorDiv.style.display = 'block';
+}
 function onCaptchaSuccess(response) {
   fetch('/challenge/verify', {
     method: 'POST',
@@ -383,9 +394,16 @@ function onCaptchaSuccess(response) {
       response: response
     })
   }).then(function(r) {
-    if (r.ok) {
-      window.location.reload();
-    }
+    return r.json().then(function(data) {
+      if (r.ok && data.success) {
+        window.location.reload();
+      } else {
+        showError(data.error || 'Verification failed. Please try again.');
+        hcaptcha.reset();
+      }
+    });
+  }).catch(function(err) {
+    showError('Network error. Please check your connection and try again.');
   });
 }
 </script>
@@ -405,16 +423,23 @@ body { font-family: system-ui; max-width: 600px; margin: 80px auto; padding: 20p
 .box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center; }
 h1 { margin: 0 0 20px; color: #333; }
 p { color: #666; line-height: 1.6; margin-bottom: 30px; }
+.error { color: #d32f2f; background: #ffebee; padding: 12px; border-radius: 4px; margin: 20px 0; display: none; }
 </style>
 </head>
 <body>
 <div class="box">
 <h1>Security Check</h1>
 <p>Please complete the challenge to continue:</p>
+<div id="error-message" class="error"></div>
 <div class="cf-turnstile" data-sitekey="%s" data-callback="onTurnstileSuccess"></div>
 <input type="hidden" id="token" value="%s">
 </div>
 <script>
+function showError(msg) {
+  var errorDiv = document.getElementById('error-message');
+  errorDiv.textContent = msg;
+  errorDiv.style.display = 'block';
+}
 function onTurnstileSuccess(response) {
   fetch('/challenge/verify', {
     method: 'POST',
@@ -425,9 +450,16 @@ function onTurnstileSuccess(response) {
       response: response
     })
   }).then(function(r) {
-    if (r.ok) {
-      window.location.reload();
-    }
+    return r.json().then(function(data) {
+      if (r.ok && data.success) {
+        window.location.reload();
+      } else {
+        showError(data.error || 'Verification failed. Please try again.');
+        turnstile.reset();
+      }
+    });
+  }).catch(function(err) {
+    showError('Network error. Please check your connection and try again.');
   });
 }
 </script>

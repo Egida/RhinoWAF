@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 // Pre-compiled regexes for performance
@@ -22,11 +23,14 @@ var (
 	// Detection patterns
 	sqlOrEqualRegex = regexp.MustCompile(`(?i)or\s+\d+=\d+`)
 	dropTableRegex  = regexp.MustCompile(`(?i)drop\s+table`)
+
+	// Header injection patterns
+	crlfRegex        = regexp.MustCompile(`[\r\n]`)
+	headerSplitRegex = regexp.MustCompile(`[\r\n]\s*[a-zA-Z-]+\s*:`)
 )
 
 // All sanitizes ALL input vectors in an HTTP request
 func All(r *http.Request) {
-	// 1. Sanitize URL query parameters
 	q := r.URL.Query()
 	for k, vals := range q {
 		for i, v := range vals {
@@ -35,10 +39,8 @@ func All(r *http.Request) {
 	}
 	r.URL.RawQuery = q.Encode()
 
-	// 2. Sanitize URL path (protects against path traversal in route params)
 	r.URL.Path = Clean(r.URL.Path)
 
-	// 3. Sanitize form data (POST, PUT, PATCH)
 	if r.Method == "POST" || r.Method == "PUT" || r.Method == "PATCH" {
 		r.ParseForm()
 		for k, vals := range r.Form {
@@ -46,7 +48,6 @@ func All(r *http.Request) {
 				r.Form[k][i] = Clean(v)
 			}
 		}
-		// Also sanitize PostForm (non-URL-encoded POST data)
 		for k, vals := range r.PostForm {
 			for i, v := range vals {
 				r.PostForm[k][i] = Clean(v)
@@ -54,15 +55,12 @@ func All(r *http.Request) {
 		}
 	}
 
-	// 4. Sanitize multipart form data (file uploads, etc.)
 	if r.MultipartForm != nil {
 		for k, vals := range r.MultipartForm.Value {
 			for i, v := range vals {
 				r.MultipartForm.Value[k][i] = Clean(v)
 			}
 		}
-		// Note: File content sanitization is intentionally skipped
-		// as it could corrupt binary data. Filename sanitization is included.
 		for k, files := range r.MultipartForm.File {
 			for i, fh := range files {
 				r.MultipartForm.File[k][i].Filename = Clean(fh.Filename)
@@ -70,7 +68,6 @@ func All(r *http.Request) {
 		}
 	}
 
-	// 5. Sanitize HTTP headers (excluding critical ones)
 	criticalHeaders := map[string]bool{
 		"Content-Type":      true,
 		"Content-Length":    true,
@@ -79,7 +76,6 @@ func All(r *http.Request) {
 		"Transfer-Encoding": true,
 	}
 	for k, vals := range r.Header {
-		// Skip critical headers that could break HTTP
 		if criticalHeaders[k] {
 			continue
 		}
@@ -88,17 +84,13 @@ func All(r *http.Request) {
 		}
 	}
 
-	// 6. Sanitize cookies
 	for _, c := range r.Cookies() {
 		c.Value = Clean(c.Value)
-		// Also sanitize cookie name (prevents header injection)
 		c.Name = Clean(c.Name)
 	}
 
-	// 7. Sanitize URL fragment (rarely used server-side but just in case)
 	r.URL.Fragment = Clean(r.URL.Fragment)
 
-	// 8. Sanitize basic auth credentials (if present)
 	if user, pass, ok := r.BasicAuth(); ok {
 		r.SetBasicAuth(Clean(user), Clean(pass))
 	}
@@ -145,7 +137,6 @@ func IsMalicious(r *http.Request) bool {
 		return false
 	}
 
-	// 1. Check URL query parameters
 	for _, vals := range r.URL.Query() {
 		for _, v := range vals {
 			if check(v) {
@@ -154,12 +145,10 @@ func IsMalicious(r *http.Request) bool {
 		}
 	}
 
-	// 2. Check URL path (path traversal, etc.)
 	if check(r.URL.Path) {
 		return true
 	}
 
-	// 3. Check form data
 	r.ParseForm()
 	for _, vals := range r.Form {
 		for _, v := range vals {
@@ -169,7 +158,6 @@ func IsMalicious(r *http.Request) bool {
 		}
 	}
 
-	// 4. Check PostForm separately
 	for _, vals := range r.PostForm {
 		for _, v := range vals {
 			if check(v) {
@@ -178,7 +166,6 @@ func IsMalicious(r *http.Request) bool {
 		}
 	}
 
-	// 5. Check multipart form values and filenames
 	if r.MultipartForm != nil {
 		for _, vals := range r.MultipartForm.Value {
 			for _, v := range vals {
@@ -196,7 +183,6 @@ func IsMalicious(r *http.Request) bool {
 		}
 	}
 
-	// 6. Check headers (excluding critical ones to avoid false positives)
 	criticalHeaders := map[string]bool{
 		"Content-Type":      true,
 		"Content-Length":    true,
@@ -219,19 +205,16 @@ func IsMalicious(r *http.Request) bool {
 		}
 	}
 
-	// 7. Check cookies
 	for _, c := range r.Cookies() {
 		if check(c.Value) || check(c.Name) {
 			return true
 		}
 	}
 
-	// 8. Check URL fragment
 	if check(r.URL.Fragment) {
 		return true
 	}
 
-	// 9. Check basic auth credentials
 	if user, pass, ok := r.BasicAuth(); ok {
 		if check(user) || check(pass) {
 			return true
@@ -239,4 +222,91 @@ func IsMalicious(r *http.Request) bool {
 	}
 
 	return false
+}
+
+// ValidateHeaders checks for malformed or malicious headers
+// Returns true if headers are valid, false otherwise
+func ValidateHeaders(r *http.Request) (bool, string) {
+	// Check for excessively long header values (potential buffer overflow)
+	const maxHeaderLength = 8192
+
+	for name, values := range r.Header {
+		// Validate header name
+		if !isValidHeaderName(name) {
+			return false, "invalid header name: " + name
+		}
+
+		for _, value := range values {
+			// Check for null bytes
+			if strings.Contains(value, "\x00") {
+				return false, "null byte in header value: " + name
+			}
+
+			// Check for CRLF injection (header splitting)
+			if crlfRegex.MatchString(value) {
+				return false, "CRLF characters in header value: " + name
+			}
+
+			// Check for header injection attempts
+			if headerSplitRegex.MatchString(value) {
+				return false, "header injection attempt detected: " + name
+			}
+
+			// Check length
+			if len(value) > maxHeaderLength {
+				return false, "header value too long: " + name
+			}
+
+			// Check for invalid UTF-8
+			if !utf8.ValidString(value) {
+				return false, "invalid UTF-8 in header: " + name
+			}
+		}
+	}
+
+	// Validate Host header
+	host := r.Host
+	if host == "" {
+		return false, "missing Host header"
+	}
+
+	// Check for suspicious characters in Host header
+	if strings.ContainsAny(host, "\r\n\x00") {
+		return false, "invalid characters in Host header"
+	}
+
+	// Validate Content-Length if present
+	if contentLength := r.Header.Get("Content-Length"); contentLength != "" {
+		// Content-Length should only contain digits
+		if !regexp.MustCompile(`^\d+$`).MatchString(contentLength) {
+			return false, "invalid Content-Length header"
+		}
+	}
+
+	// Check for duplicate critical headers
+	criticalHeaders := []string{"Host", "Content-Length", "Transfer-Encoding"}
+	for _, header := range criticalHeaders {
+		if len(r.Header[header]) > 1 {
+			return false, "duplicate " + header + " header"
+		}
+	}
+
+	// Detect smuggling attempts (conflicting Content-Length and Transfer-Encoding)
+	if r.Header.Get("Content-Length") != "" && r.Header.Get("Transfer-Encoding") != "" {
+		return false, "both Content-Length and Transfer-Encoding present (smuggling attempt)"
+	}
+
+	return true, ""
+}
+
+// isValidHeaderName checks if a header name contains only valid characters
+func isValidHeaderName(name string) bool {
+	if name == "" {
+		return false
+	}
+
+	// Header names should only contain alphanumeric characters and hyphens
+	// and should not start or end with a hyphen
+	validNameRegex := regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9-]*[a-zA-Z0-9]$|^[a-zA-Z]$`)
+	return validNameRegex.MatchString(name)
 }

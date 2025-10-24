@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // Middleware wraps HTTP handlers to collect and validate fingerprints
@@ -79,13 +80,24 @@ func (m *Middleware) CollectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ip := getIP(r)
+
+	// Apply rate limiting to prevent fingerprint collection DoS
+	if !m.tracker.rateLimiter.Allow(ip, m.tracker.config.CollectionRateLimit, 1*time.Minute) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status": "blocked",
+			"reason": "Rate limit exceeded. Please wait a moment and try again.",
+		})
+		return
+	}
+
 	var data FingerprintData
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		http.Error(w, "Invalid fingerprint data", http.StatusBadRequest)
 		return
 	}
-
-	ip := getIP(r)
 
 	// Extract server-side components
 	fp := m.tracker.ExtractFromRequest(r)
@@ -319,20 +331,16 @@ func (m *Middleware) StatsHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(stats)
 }
 
-// Helper functions
 func getIP(r *http.Request) string {
-	// Try X-Forwarded-For first (behind proxy/load balancer)
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		ips := strings.Split(xff, ",")
 		return strings.TrimSpace(ips[0])
 	}
 
-	// Try X-Real-IP
 	if xri := r.Header.Get("X-Real-IP"); xri != "" {
 		return strings.TrimSpace(xri)
 	}
 
-	// Fall back to RemoteAddr
 	ip := r.RemoteAddr
 	if idx := strings.LastIndex(ip, ":"); idx != -1 {
 		ip = ip[:idx]

@@ -2,7 +2,7 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.1 | **Status**: Tested and working well. | **Last Updated**: October 22, 2025
+**Version**: 2.2 | **Status**: Production-ready security | **Last Updated**: October 24, 2025
 
 ## Features
 
@@ -479,6 +479,13 @@ Edit `config/ip_rules.json` to customize:
 
 ## Changelog & Roadmap
 
+**v2.2** (October 24, 2025) - Maintenance & Security Release
+
+- ✅ Constant-time token comparison (Prevents timing attacks on token validation)
+- ✅ Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
+- ✅ Improved CAPTCHA error messages (Better user experience on failed challenges)
+- ✅ Better malformed header handling (Prevents header injection attacks)
+
 **v2.1** (October 22, 2025) - Security Hardening
 
 - Secure cookie handling with auto-detect HTTPS (Defends against MITM attacks)
@@ -486,12 +493,13 @@ Edit `config/ip_rules.json` to customize:
 - IP spoofing protection via trusted proxy validation (Blocks X-Forwarded-For bypass attacks)
 - New waf/security package for X-Forwarded-For validation (Validates requests against trusted proxy list)
 
-**v2.2** (Planned) - Maintenance Release
+**v2.3** (Planned) - Advanced Features
 
-- Constant-time token comparison (Prevents timing attacks on token validation)
-- Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
-- Improved CAPTCHA error messages (Better user experience on failed challenges)
-- Better malformed header handling (Prevents header injection attacks)
+- Real-time config hot-reload
+- Distributed rate limiting (Redis)
+- Web UI for rule management
+- Challenge history and reputation scoring
+- Redis-backed session/fingerprint store for multi-server deployments
 
 ---
 
@@ -501,5 +509,5 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.1 | **Status**: Production-ready with security hardening | **Last Updated**: October 22, 2025
+**Version**: 2.2 | **Status**: Production-ready with enhanced security | **Last Updated**: October 24, 2025
 

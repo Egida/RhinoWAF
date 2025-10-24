@@ -231,8 +231,6 @@ func (gt *GlobalTracker) monitorLoop() {
 			}
 		}
 
-		// Clean up inactive IPs (haven't made requests recently)
-		// This runs in IPTracker cleanup, but we clear from activeIPs here
 		if len(gt.activeIPs) > cfg.MaxConcurrentIPs*2 {
 			gt.activeIPs = make(map[string]bool) // Reset if too large
 		}

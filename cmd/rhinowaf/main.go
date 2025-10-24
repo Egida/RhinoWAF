@@ -98,7 +98,7 @@ func main() {
 	handler := fingerprintMW.Handler(challengeMW.Handler(mux))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                     RhinoWAF v2.1                          ║")
+	fmt.Println("║                     RhinoWAF v2.2                          ║")
 	fmt.Println("║              Production Web Application Firewall            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")

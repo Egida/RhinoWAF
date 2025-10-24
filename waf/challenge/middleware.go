@@ -2,6 +2,7 @@ package challenge
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -71,47 +72,85 @@ func (m *Middleware) VerifyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Invalid request format. Please refresh the page and try again.",
+		})
 		return
 	}
 
 	session, exists := m.manager.GetSession(req.Token)
 	if !exists {
-		http.Error(w, "Invalid token", http.StatusBadRequest)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "Challenge session expired. Please refresh the page to get a new challenge.",
+		})
 		return
 	}
 
 	ip := m.getIP(r)
 	if session.IP != ip {
-		http.Error(w, "IP mismatch", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   "IP address mismatch detected. Please ensure you're not using a VPN or proxy that changes IP addresses.",
+		})
 		return
 	}
 
 	verified := false
+	errorMessage := ""
 
 	switch ChallengeType(req.Type) {
 	case TypeJavaScript:
 		verified = true
 	case TypeProofOfWork:
 		verified = m.manager.VerifyPOW(session.Challenge, req.Solution, session.Difficulty)
+		if !verified {
+			errorMessage = "Proof-of-work solution is incorrect. Please try again."
+		}
 	case TypeHCaptcha:
-		success, err := m.manager.VerifyHCaptcha(req.Response, ip)
-		if err == nil {
-			verified = success
+		if req.Response == "" {
+			errorMessage = "Please complete the CAPTCHA challenge before submitting."
+		} else {
+			success, err := m.manager.VerifyHCaptcha(req.Response, ip)
+			if err != nil {
+				errorMessage = fmt.Sprintf("CAPTCHA verification failed: %s. Please refresh the page and try again.", err.Error())
+			} else if !success {
+				errorMessage = "CAPTCHA verification failed. The response was invalid or expired. Please try again."
+			}
+			verified = success && err == nil
 		}
 	case TypeTurnstile:
-		success, err := m.manager.VerifyTurnstile(req.Response, ip)
-		if err == nil {
-			verified = success
+		if req.Response == "" {
+			errorMessage = "Please complete the challenge before submitting."
+		} else {
+			success, err := m.manager.VerifyTurnstile(req.Response, ip)
+			if err != nil {
+				errorMessage = fmt.Sprintf("Challenge verification failed: %s. Please refresh the page and try again.", err.Error())
+			} else if !success {
+				errorMessage = "Challenge verification failed. The response was invalid or expired. Please try again."
+			}
+			verified = success && err == nil
 		}
+	default:
+		errorMessage = "Unknown challenge type. Please refresh the page and try again."
 	}
 
 	if verified {
 		m.manager.MarkVerified(req.Token)
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(map[string]bool{"success": true})
 	} else {
-		http.Error(w, "Verification failed", http.StatusForbidden)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"error":   errorMessage,
+		})
 	}
 }
 

@@ -53,6 +53,7 @@ type FingerprintData struct {
 type Tracker struct {
 	fingerprints map[string]*Fingerprint // hash -> fingerprint
 	ipToHash     map[string][]string     // IP -> fingerprint hashes
+	rateLimiter  *RateLimiter            // Rate limiter for fingerprint collection
 	mu           sync.RWMutex
 	config       Config
 }
@@ -64,6 +65,65 @@ type Config struct {
 	SuspiciousThreshold  int           // Number of IPs to flag as suspicious
 	BlockOnExceed        bool          // Block if exceeds max IPs
 	RequireClientData    bool          // Require canvas/WebGL data
+	CollectionRateLimit  int           // Max fingerprint collection requests per IP per minute
+}
+
+// RateLimiter tracks request rates per IP for fingerprint collection
+type RateLimiter struct {
+	requests map[string]*ipRequests
+	mu       sync.RWMutex
+}
+
+type ipRequests struct {
+	count     int
+	resetTime time.Time
+}
+
+func newRateLimiter() *RateLimiter {
+	rl := &RateLimiter{
+		requests: make(map[string]*ipRequests),
+	}
+	go rl.cleanup()
+	return rl
+}
+
+func (rl *RateLimiter) cleanup() {
+	ticker := time.NewTicker(1 * time.Minute)
+	for range ticker.C {
+		rl.mu.Lock()
+		now := time.Now()
+		for ip, req := range rl.requests {
+			if now.After(req.resetTime) {
+				delete(rl.requests, ip)
+			}
+		}
+		rl.mu.Unlock()
+	}
+}
+
+// Allow checks if the IP is allowed to make a request
+// Returns true if allowed, false if rate limit exceeded
+func (rl *RateLimiter) Allow(ip string, maxRequests int, window time.Duration) bool {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	req, exists := rl.requests[ip]
+
+	if !exists || now.After(req.resetTime) {
+		rl.requests[ip] = &ipRequests{
+			count:     1,
+			resetTime: now.Add(window),
+		}
+		return true
+	}
+
+	if req.count >= maxRequests {
+		return false
+	}
+
+	req.count++
+	return true
 }
 
 // Statistics for monitoring
@@ -86,6 +146,7 @@ func NewTracker(config Config) *Tracker {
 	t := &Tracker{
 		fingerprints: make(map[string]*Fingerprint),
 		ipToHash:     make(map[string][]string),
+		rateLimiter:  newRateLimiter(),
 		config:       config,
 	}
 
@@ -98,6 +159,9 @@ func NewTracker(config Config) *Tracker {
 	}
 	if t.config.MaxAgeForReuse == 0 {
 		t.config.MaxAgeForReuse = 24 * time.Hour
+	}
+	if t.config.CollectionRateLimit == 0 {
+		t.config.CollectionRateLimit = 10 // 10 requests per minute per IP
 	}
 
 	go t.cleanupExpired()
@@ -376,7 +440,6 @@ func (t *Tracker) cleanupExpired() {
 	}
 }
 
-// Helper functions
 func contains(slice []string, item string) bool {
 	for _, s := range slice {
 		if s == item {
