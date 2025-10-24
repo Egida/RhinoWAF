@@ -493,13 +493,18 @@ Edit `config/ip_rules.json` to customize:
 - IP spoofing protection via trusted proxy validation (Blocks X-Forwarded-For bypass attacks)
 - New waf/security package for X-Forwarded-For validation (Validates requests against trusted proxy list)
 
-**v2.3** (Planned) - Advanced Features
+**v2.3** (Planned) - Performance & Observability
 
-- Real-time config hot-reload
-- Distributed rate limiting (Redis)
-- Web UI for rule management
+- Real-time config hot-reload (Modify IP rules/geo blocks without restart)
+- Prometheus metrics endpoint (Request rates, block counts, latency percentiles)
+
+**v3.0** (Future) - Enterprise Features
+
+- Distributed rate limiting with Redis backend
+- Web UI for rule management and live monitoring
 - Challenge history and reputation scoring
-- Redis-backed session/fingerprint store for multi-server deployments
+- Multi-server session/fingerprint synchronization
+- Custom Lua scripting for advanced rules
 
 ---
 
