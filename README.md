@@ -479,32 +479,42 @@ Edit `config/ip_rules.json` to customize:
 
 ## Changelog & Roadmap
 
-**v2.2** (October 24, 2025) - Maintenance & Security Release
+### Released Versions
 
--  Constant-time token comparison (Prevents timing attacks on token validation)
--  Rate limiting on /fingerprint/collect (Prevents fingerprint collection DoS)
--  Improved CAPTCHA error messages (Better user experience on failed challenges)
--  Better malformed header handling (Prevents header injection attacks)
+#### **v2.2** — October 24, 2025
+*Maintenance & Security Release*
 
-**v2.1** (October 22, 2025) - Security Hardening
+-  **Constant-time token comparison** — Prevents timing attacks on token validation
+-  **Rate limiting on `/fingerprint/collect`** — Prevents fingerprint collection DoS
+-  **Improved CAPTCHA error messages** — Better user experience on failed challenges
+-  **Better malformed header handling** — Prevents header injection attacks
 
-- Secure cookie handling with auto-detect HTTPS (Defends against MITM attacks)
-- CAPTCHA secret validation warnings (Prevents silent misconfigurations)
-- IP spoofing protection via trusted proxy validation (Blocks X-Forwarded-For bypass attacks)
-- New waf/security package for X-Forwarded-For validation (Validates requests against trusted proxy list)
+#### **v2.1** — October 22, 2025
+*Security Hardening*
 
-**v2.3** (Planned) - Performance & Observability
+-  **Secure cookie handling with auto-detect HTTPS** — Defends against MITM attacks
+-  **CAPTCHA secret validation warnings** — Prevents silent misconfigurations
+-  **IP spoofing protection via trusted proxy validation** — Blocks X-Forwarded-For bypass
+-  **New `waf/security` package** — X-Forwarded-For validation against trusted proxy list
 
-- Real-time config hot-reload (Modify IP rules/geo blocks without restart)
-- Prometheus metrics endpoint (Request rates, block counts, latency percentiles)
+---
 
-**v3.0** (Future) - Enterprise Features
+### Planned Releases
 
-- Distributed rate limiting with Redis backend
-- Web UI for rule management and live monitoring
-- Challenge history and reputation scoring
-- Multi-server session/fingerprint synchronization
-- Custom Lua scripting for advanced rules
+#### **v2.3** — Performance & Observability
+*Target: Q1 2026*
+
+-  **Real-time config hot-reload** — Modify IP rules/geo blocks without restart
+-  **Prometheus metrics endpoint** — Request rates, block counts, latency percentiles
+
+#### **v3.0** — Enterprise Features
+*Target: Q2 2026*
+
+-  **Distributed rate limiting** — Redis backend for multi-server deployments
+-  **Web UI dashboard** — Rule management and live monitoring interface
+-  **Challenge history & reputation scoring** — Track and block repeat offenders
+-  **Multi-server session synchronization** — Shared fingerprint/session store
+-  **Custom Lua scripting** — Advanced rule customization engine
 
 ---
 
