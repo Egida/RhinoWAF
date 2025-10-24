@@ -1,6 +1,6 @@
 # RhinoWAF Production Configuration Guide
 
-**Version 2.0** | Last Updated: October 21, 2025
+**Version 2.0** | Last Updated: October 21, 2025 OUTDATED
 
 This guide covers complete production configuration for RhinoWAF, including security modes, CAPTCHA integration, and deployment best practices.
 

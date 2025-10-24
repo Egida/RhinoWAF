@@ -2,7 +2,7 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 30, 2025
+**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 24, 2025
 
 ## Features
 
