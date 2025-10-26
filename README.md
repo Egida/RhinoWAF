@@ -4,6 +4,9 @@
 
 **Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 24, 2025
 
+## Note
+It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
+
 ## Features
 
 ### **Core Protection**
