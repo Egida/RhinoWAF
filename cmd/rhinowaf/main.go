@@ -14,6 +14,7 @@ import (
 	"rhinowaf/waf/ddos"
 	"rhinowaf/waf/fingerprint"
 	"rhinowaf/waf/geo"
+	"rhinowaf/waf/health"
 	"rhinowaf/waf/logging"
 	"rhinowaf/waf/reload"
 	"rhinowaf/waf/reputation"
@@ -48,44 +49,44 @@ func main() {
 		HumanReadableEnabled: true,
 		HumanReadablePath:    "./logs/ddos-readable.log",
 	})
-	
+
 	// Also log general messages to rotated file
 	log.SetOutput(logWriter)
 
 	// Initialize webhook notifications (v2.3.1)
 	webhook.Init(webhook.Config{
-		Enabled:       false,                  // Enable when URLs configured
-		URLs:          []string{},             // Add Slack/Discord/Teams URLs here
-		MinSeverity:   "high",                 // Only high/critical/emergency alerts
-		Timeout:       5,                      // 5 seconds
+		Enabled:       false,      // Enable when URLs configured
+		URLs:          []string{}, // Add Slack/Discord/Teams URLs here
+		MinSeverity:   "high",     // Only high/critical/emergency alerts
+		Timeout:       5,          // 5 seconds
 		MaxRetries:    2,
-		SlackFormat:   false,                  // Enable for Slack URLs
-		DiscordFormat: false,                  // Enable for Discord URLs
-		TeamsFormat:   false,                  // Enable for Microsoft Teams URLs
+		SlackFormat:   false, // Enable for Slack URLs
+		DiscordFormat: false, // Enable for Discord URLs
+		TeamsFormat:   false, // Enable for Microsoft Teams URLs
 	})
 
 	// Initialize IP reputation checking (v2.3.1)
 	reputation.Init(reputation.Config{
-		Enabled:           false,              // Enable when API keys configured
-		Provider:          "both",             // Use both AbuseIPDB and IPQualityScore
+		Enabled:           false,  // Enable when API keys configured
+		Provider:          "both", // Use both AbuseIPDB and IPQualityScore
 		AbuseIPDBKey:      os.Getenv("ABUSEIPDB_API_KEY"),
 		IPQualityScoreKey: os.Getenv("IPQS_API_KEY"),
-		CacheDuration:     60,                 // Cache for 60 minutes
-		ScoreThreshold:    75,                 // Block if score >= 75
-		AutoBlock:         false,              // Enable for automatic blocking
-		AutoChallenge:     true,               // Challenge suspicious IPs
-		Timeout:           5,                  // 5 seconds
+		CacheDuration:     60,    // Cache for 60 minutes
+		ScoreThreshold:    75,    // Block if score >= 75
+		AutoBlock:         false, // Enable for automatic blocking
+		AutoChallenge:     true,  // Challenge suspicious IPs
+		Timeout:           5,     // 5 seconds
 	})
 
 	// Initialize per-user rate limiting (v2.3.1)
 	auth.Init(auth.Config{
-		Enabled:            false,             // Enable when JWT configured
+		Enabled:            false, // Enable when JWT configured
 		JWTSecret:          os.Getenv("JWT_SECRET"),
 		JWTHeader:          "Authorization",
 		SessionCookie:      "session_id",
-		RateLimitPerUser:   1000,              // 1000 requests per user
-		RateLimitWindow:    60,                // Per 60 seconds
-		WhitelistUsernames: []string{},        // Add admin usernames here
+		RateLimitPerUser:   1000,       // 1000 requests per user
+		RateLimitWindow:    60,         // Per 60 seconds
+		WhitelistUsernames: []string{}, // Add admin usernames here
 		TrackAnonymous:     false,
 	})
 
@@ -190,6 +191,9 @@ func main() {
 	// Prometheus metrics endpoint (no WAF protection for monitoring)
 	mux.Handle("/metrics", promhttp.Handler())
 
+	// Health check endpoint (v2.3.2)
+	mux.HandleFunc("/health", health.Handler("v2.3.2"))
+
 	// Reload endpoint - triggers manual configuration reload (no WAF protection)
 	mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -235,7 +239,7 @@ func main() {
 	handler := fingerprintMW.Handler(challengeMW.Handler(mux))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                   RhinoWAF v2.3.1                          ║")
+	fmt.Println("║                   RhinoWAF v2.3.2                          ║")
 	fmt.Println("║              Production Web Application Firewall            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
@@ -259,6 +263,7 @@ func main() {
 	fmt.Println("")
 	fmt.Println("  Service Information:")
 	fmt.Println("   WAF is listening on http://localhost:8080")
+	fmt.Println("   Health check endpoint at /health")
 	fmt.Println("   Prometheus metrics available at /metrics")
 	fmt.Println("   Configuration reload endpoint at /reload (POST)")
 	fmt.Println("   Automatic file watching is active")

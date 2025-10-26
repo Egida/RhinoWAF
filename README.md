@@ -2,7 +2,7 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.3.1 | **Status**: Production-ready with quality-of-life improvements | **Last Updated**: October 26, 2025
+**Version**: 2.3.2 | **Status**: Production-ready with health monitoring | **Last Updated**: October 26, 2025
 
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
@@ -605,6 +605,24 @@ export TURNSTILE_SECRET="your-secret"
 
 ### Monitoring
 ```bash
+# Check health status
+curl http://localhost:8080/health
+
+# Sample response:
+{
+  "status": "healthy",
+  "version": "v2.3.2",
+  "uptime": "2 hours 15 minutes",
+  "uptime_seconds": 8100,
+  "timestamp": "2025-10-26T21:40:38Z",
+  "system": {
+    "go_version": "go1.24.5",
+    "goroutines": 18,
+    "memory_mb": 12,
+    "num_cpu": 2
+  }
+}
+
 # Watch logs in real-time
 tail -f ./logs/ddos.log | jq '.message'
 
@@ -669,6 +687,11 @@ See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for det
 ---
 
 ### Recent Releases
+
+#### **v2.3.2** — October 26, 2025
+*Health Monitoring*
+
+- **Health Check Endpoint** — `/health` endpoint with status, uptime, memory, and system info (improves observability)
 
 #### **v2.3.1** — October 26, 2025
 *Quality of Life Improvements*
@@ -758,4 +781,4 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.3.1 | **Status**: Production-ready with quality-of-life improvements | **Last Updated**: October 26, 2025
+**Version**: 2.3.2 | **Status**: Production-ready with health monitoring | **Last Updated**: October 26, 2025
