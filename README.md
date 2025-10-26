@@ -2,7 +2,7 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 24, 2025
+**Version**: 2.3.1 | **Status**: Production-ready with quality-of-life improvements | **Last Updated**: October 26, 2025
 
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
@@ -668,20 +668,49 @@ See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for det
 
 ---
 
-### Upcoming Releases
+### Recent Releases
 
-#### **v2.3.1** (Planned) — Quality of Life Improvements
+#### **v2.3.1** — October 26, 2025
+*Quality of Life Improvements*
 
-- Custom error pages with HTML template support
-- Webhook notifications for attack alerts (Slack/Discord/Teams/generic webhooks)
-- IP reputation API integration (AbuseIPDB, IPQualityScore)
-- Connection pooling for backend proxy performance
-- Configurable log rotation and retention policies
-- JWT/session-based rate limiting per authenticated user
+- **Custom Error Pages** — Branded HTML templates with minimal CSS for better UX (defends against information leakage)
+- **Webhook Notifications** — Attack alerts to Slack/Discord/Teams with severity filtering (improves incident response)
+- **IP Reputation APIs** — AbuseIPDB and IPQualityScore integration with caching (defends against known bad actors)
+- **Connection Pooling** — HTTP transport optimization for backend proxy (improves performance)
+- **Log Rotation** — Automatic log rotation with compression and retention policies (prevents disk space issues)
+- **JWT/Session Rate Limiting** — Per-user rate limits separate from IP-based limits (defends against distributed attacks)
+
+#### **v2.3** — October 24, 2025
+*Performance & Observability Release*
+
+- **Prometheus Metrics Endpoint** — 20+ metrics at `/metrics` for monitoring (requests, blocks, challenges, fingerprints, latency)
+- **Hot-Reload Configuration** — Update IP rules/GeoIP without restart (auto file-watch + manual triggers)
+- **HTTP Reload API** — `POST /reload` endpoint for programmatic configuration updates
+- **SIGHUP Signal Handler** — Manual reload via `kill -SIGHUP` for DevOps workflows
+- **Configuration Validation** — JSON validation with safe rollback on reload errors
+- **Debounced File Watching** — 2-second debounce prevents reload storms during batch edits
+
+See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for detailed feature documentation.
+
+#### **v2.2** — October 24, 2025
+*Maintenance & Security Release*
+
+- **Constant-time token comparison** — Prevents timing attacks on token validation
+- **Rate limiting on `/fingerprint/collect`** — Prevents fingerprint collection DoS
+- **Improved CAPTCHA error messages** — Better user experience on failed challenges
+- **Better malformed header handling** — Prevents header injection attacks
+
+#### **v2.1** — October 22, 2025
+*Security Hardening*
+
+- **Secure cookie handling with auto-detect HTTPS** — Defends against MITM attacks
+- **CAPTCHA secret validation warnings** — Prevents silent misconfigurations
+- **IP spoofing protection via trusted proxy validation** — Blocks X-Forwarded-For bypass
+- **New `waf/security` package** — X-Forwarded-For validation against trusted proxy list
 
 ---
 
-### Planned Releases
+### Upcoming Releases
 
 #### **v3.0** — Enterprise Features
 
@@ -701,4 +730,4 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.3 | **Status**: Production-ready with observability | **Last Updated**: October 24, 2025
+**Version**: 2.3.1 | **Status**: Production-ready with quality-of-life improvements | **Last Updated**: October 26, 2025

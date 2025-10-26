@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"time"
 )
 
 // Backend server URL
@@ -15,7 +16,18 @@ var proxy *httputil.ReverseProxy
 
 func init() {
 	target, _ := url.Parse(backendURL)
+
+	// Create custom transport with connection pooling
+	transport := &http.Transport{
+		MaxIdleConns:        100,              // Max idle connections across all hosts
+		MaxIdleConnsPerHost: 10,               // Max idle connections per host
+		IdleConnTimeout:     90 * time.Second, // How long idle connections stay open
+		DisableKeepAlives:   false,            // Enable keep-alive
+		DisableCompression:  false,            // Enable compression
+	}
+
 	proxy = httputil.NewSingleHostReverseProxy(target)
+	proxy.Transport = transport
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		fmt.Fprintf(w, "Unable to connect to backend server. Please try again in a moment.")
 	}

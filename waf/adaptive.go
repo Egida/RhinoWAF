@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"rhinowaf/waf/ddos"
 	"rhinowaf/waf/sanitize"
+	"rhinowaf/waf/templates"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 
 		// Validate headers for malformed or malicious content (prevents header injection)
 		if valid, reason := sanitize.ValidateHeaders(r); !valid {
-			http.Error(w, "Request blocked: "+reason, http.StatusBadRequest)
+			templates.RenderBlockedError(w, ip, reason)
 			return
 		}
 
@@ -58,20 +59,20 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 
 			allowed, reason := ipMgr.ValidateRequest(ctx)
 			if !allowed {
-				http.Error(w, "Access denied: "+reason, http.StatusForbidden)
+				templates.RenderBlockedError(w, ip, reason)
 				return
 			}
 		}
 
 		// Check rate limits (L7/L4)
 		if !ddos.AllowL7(ip) || !ddos.AllowL4(ip) {
-			http.Error(w, "Too many requests. Please slow down and try again in a few moments.", http.StatusTooManyRequests)
+			templates.RenderRateLimitError(w, ip)
 			return
 		}
 
 		// Check for malicious input FIRST (before sanitization removes patterns)
 		if sanitize.IsMalicious(r) {
-			http.Error(w, "Request blocked: Potentially harmful content detected", http.StatusForbidden)
+			templates.RenderMaliciousError(w)
 			return
 		}
 

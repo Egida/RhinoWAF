@@ -9,11 +9,15 @@ import (
 	"os/signal"
 	"rhinowaf/handlers"
 	"rhinowaf/waf"
+	"rhinowaf/waf/auth"
 	"rhinowaf/waf/challenge"
 	"rhinowaf/waf/ddos"
 	"rhinowaf/waf/fingerprint"
 	"rhinowaf/waf/geo"
+	"rhinowaf/waf/logging"
 	"rhinowaf/waf/reload"
+	"rhinowaf/waf/reputation"
+	"rhinowaf/waf/webhook"
 	"syscall"
 	"time"
 
@@ -21,7 +25,69 @@ import (
 )
 
 func main() {
-	ddos.InitLogger(nil)
+	// Initialize log rotation (v2.3.1)
+	logWriter := logging.SetupRotation(logging.Config{
+		Enabled:    true,
+		Filename:   "./logs/rhinowaf.log",
+		MaxSize:    100, // 100MB
+		MaxBackups: 3,
+		MaxAge:     28, // days
+		Compress:   true,
+	})
+
+	// Initialize DDoS logger with log rotation
+	ddos.InitLogger(&ddos.LoggerConfig{
+		LogPath:              "./logs/ddos.log",
+		Enabled:              true,
+		LogToConsole:         true,
+		MaxSizeMB:            100,
+		MaxAgeDays:           30,
+		CompressOld:          true,
+		FlushInterval:        1 * time.Second,
+		BatchSize:            100,
+		HumanReadableEnabled: true,
+		HumanReadablePath:    "./logs/ddos-readable.log",
+	})
+	
+	// Also log general messages to rotated file
+	log.SetOutput(logWriter)
+
+	// Initialize webhook notifications (v2.3.1)
+	webhook.Init(webhook.Config{
+		Enabled:       false,                  // Enable when URLs configured
+		URLs:          []string{},             // Add Slack/Discord/Teams URLs here
+		MinSeverity:   "high",                 // Only high/critical/emergency alerts
+		Timeout:       5,                      // 5 seconds
+		MaxRetries:    2,
+		SlackFormat:   false,                  // Enable for Slack URLs
+		DiscordFormat: false,                  // Enable for Discord URLs
+		TeamsFormat:   false,                  // Enable for Microsoft Teams URLs
+	})
+
+	// Initialize IP reputation checking (v2.3.1)
+	reputation.Init(reputation.Config{
+		Enabled:           false,              // Enable when API keys configured
+		Provider:          "both",             // Use both AbuseIPDB and IPQualityScore
+		AbuseIPDBKey:      os.Getenv("ABUSEIPDB_API_KEY"),
+		IPQualityScoreKey: os.Getenv("IPQS_API_KEY"),
+		CacheDuration:     60,                 // Cache for 60 minutes
+		ScoreThreshold:    75,                 // Block if score >= 75
+		AutoBlock:         false,              // Enable for automatic blocking
+		AutoChallenge:     true,               // Challenge suspicious IPs
+		Timeout:           5,                  // 5 seconds
+	})
+
+	// Initialize per-user rate limiting (v2.3.1)
+	auth.Init(auth.Config{
+		Enabled:            false,             // Enable when JWT configured
+		JWTSecret:          os.Getenv("JWT_SECRET"),
+		JWTHeader:          "Authorization",
+		SessionCookie:      "session_id",
+		RateLimitPerUser:   1000,              // 1000 requests per user
+		RateLimitWindow:    60,                // Per 60 seconds
+		WhitelistUsernames: []string{},        // Add admin usernames here
+		TrackAnonymous:     false,
+	})
 
 	// Initialize IP manager with advanced rules
 	if err := ddos.InitIPManager("./config/ip_rules.json", true); err != nil {
@@ -169,7 +235,7 @@ func main() {
 	handler := fingerprintMW.Handler(challengeMW.Handler(mux))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                     RhinoWAF v2.3                          ║")
+	fmt.Println("║                   RhinoWAF v2.3.1                          ║")
 	fmt.Println("║              Production Web Application Firewall            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
@@ -183,6 +249,14 @@ func main() {
 	fmt.Println("   - Input Sanitization and XSS Protection")
 	fmt.Println("   - Live Configuration Reloading")
 	fmt.Println("")
+	fmt.Println("  Quality of Life Features (v2.3.1):")
+	fmt.Println("   - Custom Error Pages with Branding")
+	fmt.Println("   - Webhook Notifications (Slack/Discord/Teams)")
+	fmt.Println("   - IP Reputation Checking (AbuseIPDB/IPQualityScore)")
+	fmt.Println("   - Connection Pooling for Backend Proxy")
+	fmt.Println("   - Automatic Log Rotation and Compression")
+	fmt.Println("   - JWT/Session-based Rate Limiting")
+	fmt.Println("")
 	fmt.Println("  Service Information:")
 	fmt.Println("   WAF is listening on http://localhost:8080")
 	fmt.Println("   Prometheus metrics available at /metrics")
@@ -190,6 +264,7 @@ func main() {
 	fmt.Println("   Automatic file watching is active")
 	fmt.Println("   Manual reload available with: kill -SIGHUP <pid>")
 	fmt.Println("   Attack logs being written to ./logs/ddos.log")
+	fmt.Println("   General logs being written to ./logs/rhinowaf.log")
 	fmt.Println("   Backend proxy target: http://localhost:9000")
 	fmt.Println("")
 	fmt.Println("RhinoWAF is ready and protecting your application.")
