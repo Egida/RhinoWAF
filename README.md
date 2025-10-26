@@ -665,10 +665,24 @@ See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for det
 
 ---
 
+### Upcoming Releases
+
+#### **v2.3.1** (Planned) — Quality of Life Improvements
+
+- Custom error pages with HTML template support
+- Webhook notifications for attack alerts (Slack/Discord/Teams/generic webhooks)
+- IP reputation API integration (AbuseIPDB, IPQualityScore)
+- Connection pooling for backend proxy performance
+- Configurable log rotation and retention policies
+- JWT/session-based rate limiting per authenticated user
+
+---
+
 ### Planned Releases
 
 #### **v3.0** — Enterprise Features
-*Target: Q2 2026*
+
+Target: Q2 2026
 
 - **Distributed rate limiting** — Redis backend for multi-server deployments
 - **Web UI dashboard** — Rule management and live monitoring interface
