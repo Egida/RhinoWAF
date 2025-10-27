@@ -5,7 +5,10 @@
 **Version**: 2.3.2 | **Status**: Production-ready with health monitoring | **Last Updated**: October 26, 2025
 
 ## Note
-It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
+It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can\
+
+# DISCLAIMER
+I ran out of codespace usage till october 31, so me and the team aint makin no more updates. :(
 
 ## Features
 
