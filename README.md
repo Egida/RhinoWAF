@@ -65,11 +65,12 @@ It may seem im doing this very fast, keep in mind im working as a team with 5-6 
 - **Prometheus Metrics**: Real-time observability at `/metrics` endpoint
 - **Hot-Reload**: Live configuration updates without restart
 
-### **Planned Enhancements**(V3.0+)
-- Distributed rate limiting (Redis)
-- Web UI for rule management
-- Challenge history and reputation scoring
-- Redis-backed session/fingerprint store for multi-server deployments
+### **Planned Enhancements (v2.5+)**
+- Advanced rate limiting algorithms (token bucket, sliding window)
+- GraphQL query depth limiting
+- WebSocket security and payload inspection
+- Response header security (CSP, HSTS auto-injection)
+- **v3.0+**: Distributed rate limiting (Redis), Web UI dashboard, Multi-server synchronization
 
 ## Quick Start
 
@@ -823,42 +824,29 @@ See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for det
 
 ### Upcoming Releases
 
-#### **v2.4.0** — Advanced Security & Analytics
+#### **v2.5** — Advanced Rate Limiting & Analytics
 
-Target: December 2025
+Target: November 2025
 
-**High Priority:**
+**Planned Features:**
 
-- **Request smuggling detection** — HTTP/1.1 and HTTP/2 desync protection (defends against CL.TE/TE.CL attacks)
-- **Advanced rate limiting algorithms** — Token bucket and sliding window implementations (improves fairness)
-- **GraphQL query depth limiting** — Prevents DoS via deeply nested queries (defends against resource exhaustion)
-- **WebSocket security** — Rate limiting and payload inspection for WS connections (defends against WS-based attacks)
-- **Machine learning anomaly detection** — Behavioral analysis for 0-day attack detection (improves threat detection)
-
-**Medium Priority:**
-
-- **Response header security** — Auto-inject CSP, HSTS, X-Frame-Options headers (defends against XSS/clickjacking)
-- **Request body inspection** — Deep packet inspection for JSON/XML payloads (improves input validation)
-- **API schema validation** — OpenAPI/Swagger schema enforcement (prevents malformed API requests)
-- **Session fingerprint binding** — Bind sessions to browser fingerprint (defends against session hijacking)
-- **Geo-velocity checking** — Flag impossible travel between requests (detects account takeover)
-
-**Low Priority:**
-
-- **Load balancing support** — Round-robin and least-connections algorithms (improves scalability)
-- **Traffic mirroring** — Copy requests to secondary backend for testing (improves deployment safety)
-- **Request replay protection** — Nonce-based replay attack prevention (defends against replay attacks)
-- **Advanced logging filters** — Configurable log sampling and PII redaction (improves compliance)
-- **Custom middleware hooks** — Plugin system for custom request/response processing (improves extensibility)
+- **Advanced rate limiting algorithms** — Token bucket and sliding window implementations
+- **GraphQL query depth limiting** — Prevents DoS via deeply nested queries
+- **WebSocket security** — Rate limiting and payload inspection for WS connections
+- **Response header security** — Auto-inject CSP, HSTS, X-Frame-Options headers
+- **API schema validation** — OpenAPI/Swagger schema enforcement
+- **Session fingerprint binding** — Bind sessions to browser fingerprint
+- **Geo-velocity checking** — Flag impossible travel between requests
 
 #### **v3.0** — Enterprise Features
 
-Target: Q2 2026
+Target: Q1 2026
 
 - **Distributed rate limiting** — Redis backend for multi-server deployments
 - **Web UI dashboard** — Rule management and live monitoring interface
 - **Challenge history & reputation scoring** — Track and block repeat offenders
 - **Multi-server session synchronization** — Shared fingerprint/session store
+- **Machine learning anomaly detection** — Behavioral analysis for 0-day threats
 - **Custom Lua scripting** — Advanced rule customization engine
 
 ---
