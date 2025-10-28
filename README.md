@@ -2,19 +2,18 @@
 
 **High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
 
-**Version**: 2.3.2 | **Status**: Production-ready with health monitoring | **Last Updated**: October 26, 2025
+**Version**: 2.4.0 | **Status**: Production-ready with HTTP request smuggling detection | **Last Updated**: October 28, 2025
 
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
 
-# DISCLAIMER
-I ran out of codespace usage till october 31, so me and the team aint makin no more updates. :(
-
 ## Features
 
 ### **Core Protection**
+
 - **DDoS Protection**: Rate limiting, burst detection, Slowloris mitigation, reputation scoring
 - **Input Sanitization**: SQL injection, XSS, path traversal, command injection blocking
+- **HTTP Request Smuggling Detection**: CL.TE, TE.CL, TE.TE, header obfuscation, protocol violations
 - **IP Management**: 60+ per-IP control fields with priority-based rule matching
 - **Geolocation Blocking**: Country/region-based access control with CIDR lookup
 - **ASN Blocking**: Block entire autonomous systems (hosting providers, VPNs)
@@ -53,16 +52,18 @@ I ran out of codespace usage till october 31, so me and the team aint makin no m
 - **Headless Browser Blocking**: Requires canvas/WebGL data that bots often fail
 - **Automatic Collection**: Transparent 1-2 second verification on first visit
 
-### **Production Status (v2.3)**
--  **Challenge System**: Enabled by default (JavaScript challenges)
--  **Browser Fingerprinting**: Enabled by default (bot network detection)
--  **Geolocation Blocking**: Active with 4 geo rules (CN, RU, IR challenge; KP blocked)
--  **Proxy/Tor Blocking**: Enabled (blocks proxies, Tor, hosting providers)
--  **Rate Limiting**: 100 req/IP, 10 concurrent connections
--  **User-Agent Filtering**: Blocks empty/suspicious UAs
--  **GeoIP Database**: 12 CIDR ranges covering major regions
--  **Prometheus Metrics**: Real-time observability at `/metrics` endpoint
--  **Hot-Reload**: Live configuration updates without restart
+### **Production Status (v2.4)**
+
+- **Challenge System**: Enabled by default (JavaScript challenges)
+- **Browser Fingerprinting**: Enabled by default (bot network detection)
+- **HTTP Request Smuggling Detection**: Active with strict mode, blocks severity 4+ violations
+- **Geolocation Blocking**: Active with 4 geo rules (CN, RU, IR challenge; KP blocked)
+- **Proxy/Tor Blocking**: Enabled (blocks proxies, Tor, hosting providers)
+- **Rate Limiting**: 100 req/IP, 10 concurrent connections
+- **User-Agent Filtering**: Blocks empty/suspicious UAs
+- **GeoIP Database**: 12 CIDR ranges covering major regions
+- **Prometheus Metrics**: Real-time observability at `/metrics` endpoint
+- **Hot-Reload**: Live configuration updates without restart
 
 ### **Planned Enhancements**(V3.0+)
 - Distributed rate limiting (Redis)
@@ -81,13 +82,15 @@ go build -o rhinowaf ./cmd/rhinowaf
 ```
 
 **Expected startup output:**
-```
+
+```text
 ╔════════════════════════════════════════════════════════════╗
-║                     RhinoWAF v2.3                          ║
+║                     RhinoWAF v2.4                          ║
 ║              Production Web Application Firewall            ║
 ╚════════════════════════════════════════════════════════════╝
 
   Security Features:
+   HTTP Request Smuggling Detection (ACTIVE)
    DDoS Protection with Rate Limiting
    Advanced IP Rule Enforcement (60+ fields)
    Challenge System (JavaScript PoW)
@@ -358,7 +361,77 @@ curl http://localhost:8080/fingerprint/stats
 
 See [docs/FINGERPRINTING.md](docs/FINGERPRINTING.md) for full documentation.
 
-## Prometheus Metrics (v2.3)
+## HTTP Request Smuggling Protection (v2.4 NEW)
+
+Detects and blocks HTTP request smuggling attacks with severity-based blocking. See `docs/SMUGGLING_DETECTION.md` for full technical documentation.
+
+### What It Detects
+
+**17 Violation Types:**
+- **CL.TE / TE.CL Conflicts** - Mismatched Content-Length and Transfer-Encoding headers (severity 5)
+- **Multiple Headers** - Duplicate Content-Length or Transfer-Encoding headers (severity 5)
+- **Header Obfuscation** - Whitespace, hex encoding, control characters in headers (severity 4)
+- **Invalid Values** - Negative, malformed, or conflicting header values (severity 4)
+- **Protocol Violations** - HTTP/0.9 with headers, invalid protocols (severity 3-5)
+
+### Configuration Modes
+
+**Strict Mode (Default Production):**
+```go
+// Enabled in waf/adaptive.go
+smugglingDetector := smuggling.NewDetector(
+    true,  // strict_mode: comprehensive validation
+    true,  // log_violations: all detections logged
+    4,     // block_threshold: blocks severity 4+
+)
+```
+
+**Moderate Mode (Balanced):**
+```go
+smugglingDetector := smuggling.NewDetector(false, true, 5)
+// Blocks only critical attacks (severity 5)
+```
+
+**Permissive Mode (Development):**
+```go
+smugglingDetector := smuggling.NewDetector(false, true, 6)
+// Logs all violations but never blocks
+```
+
+### How It Works
+
+1. **First Line of Defense** - Runs before all other WAF checks
+2. **Request Inspection** - Analyzes Content-Length, Transfer-Encoding, HTTP protocol
+3. **Violation Scoring** - Each violation has severity 1-5
+4. **Threshold Blocking** - Requests meeting/exceeding threshold are blocked
+5. **Metrics Recorded** - All violations tracked in Prometheus
+
+### Prometheus Metrics
+
+```bash
+# Total smuggling attempts blocked (by violation type)
+rhinowaf_smuggling_attempts_blocked_total{violation_type="CL_TE_CONFLICT"}
+
+# All violations detected (including non-blocking)
+rhinowaf_smuggling_violations_detected_total{violation_type="OBFUSCATED_CL",severity="4"}
+```
+
+### Example Attack Blocked
+
+```bash
+# CL.TE attack attempt
+curl -X POST http://localhost:8080/ \
+  -H "Content-Length: 44" \
+  -H "Transfer-Encoding: chunked" \
+  -d "GET /admin HTTP/1.1..."
+
+# Response: 403 Forbidden
+# Metrics: rhinowaf_smuggling_attempts_blocked_total{violation_type="CL_TE_CONFLICT"} = 1
+```
+
+See [docs/SMUGGLING_DETECTION.md](docs/SMUGGLING_DETECTION.md) for detailed technical documentation, attack examples, and testing procedures.
+
+## Prometheus Metrics (v2.4)
 
 RhinoWAF exposes comprehensive metrics for monitoring and alerting:
 
@@ -409,7 +482,7 @@ rate(rhinowaf_challenges_passed[5m]) / rate(rhinowaf_challenges_issued[5m])
 
 See [docs/CHANGELOGS/V2.3_FEATURES.md](docs/CHANGELOGS/V2.3_FEATURES.md) for full metrics documentation and Grafana dashboard examples.
 
-## Hot-Reload Configuration (v2.3)
+## Hot-Reload Configuration (v2.4)
 
 Update IP rules and GeoIP database without restarting RhinoWAF:
 
@@ -614,7 +687,7 @@ curl http://localhost:8080/health
 # Sample response:
 {
   "status": "healthy",
-  "version": "v2.3.2",
+  "version": "v2.4.0",
   "uptime": "2 hours 15 minutes",
   "uptime_seconds": 8100,
   "timestamp": "2025-10-26T21:40:38Z",
@@ -658,6 +731,18 @@ Edit `config/ip_rules.json` to customize:
 ## Changelog & Roadmap
 
 ### Released Versions
+
+#### **v2.4** — October 28, 2025
+*HTTP Request Smuggling Protection*
+
+- **Smuggling Detection Engine** — 17 violation types detecting CL.TE, TE.CL, TE.TE attacks
+- **Severity-based Blocking** — Configurable thresholds (1-5 severity scale), blocks 4+ by default
+- **Header Obfuscation Detection** — Catches whitespace, hex encoding, control characters in headers
+- **Protocol Violation Checks** — Detects invalid Content-Length/Transfer-Encoding combinations
+- **Prometheus Metrics** — `rhinowaf_smuggling_attempts_blocked_total` and `rhinowaf_smuggling_violations_detected_total`
+- **Strict Mode** — Production-ready configuration with comprehensive request validation
+
+See [docs/SMUGGLING_DETECTION.md](docs/SMUGGLING_DETECTION.md) for technical documentation and [docs/CHANGELOGS/V2.4_FEATURES.md](docs/CHANGELOGS/V2.4_FEATURES.md) for detailed feature information.
 
 #### **v2.3** — October 24, 2025
 *Performance & Observability Release*
@@ -784,4 +869,4 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.3.2 | **Status**: Production-ready with health monitoring | **Last Updated**: October 26, 2025
+**Version**: 2.4.0 | **Status**: Production-ready with HTTP request smuggling detection | **Last Updated**: October 28, 2025
