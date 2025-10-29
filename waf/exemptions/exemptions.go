@@ -15,10 +15,10 @@ type Config struct {
 }
 
 type Handler struct {
-	config   Config
-	ipNets   []*net.IPNet
-	ipCache  map[string]bool
-	cacheMu  sync.RWMutex
+	config  Config
+	ipNets  []*net.IPNet
+	ipCache map[string]bool
+	cacheMu sync.RWMutex
 }
 
 func NewHandler(config Config) (*Handler, error) {

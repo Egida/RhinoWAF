@@ -50,7 +50,7 @@ func (l *Limiter) Check(r *http.Request) (bool, string) {
 	}
 
 	limit := l.GetLimit(r.URL.Path)
-	
+
 	if r.ContentLength > limit {
 		return false, fmt.Sprintf("Request body too large: %d bytes (limit: %d bytes)", r.ContentLength, limit)
 	}

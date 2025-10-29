@@ -13,9 +13,9 @@ type Schedule struct {
 }
 
 type Config struct {
-	Enabled       bool
-	DefaultLimit  int
-	Schedules     []Schedule
+	Enabled      bool
+	DefaultLimit int
+	Schedules    []Schedule
 }
 
 type Limiter struct {
@@ -48,7 +48,7 @@ func (l *Limiter) Check(ip string) bool {
 
 	now := time.Now()
 	limit := l.getCurrentLimit(now)
-	
+
 	cutoff := now.Add(-time.Minute)
 	l.requests[ip] = l.filterOld(l.requests[ip], cutoff)
 

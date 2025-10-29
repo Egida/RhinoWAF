@@ -271,4 +271,3 @@ func GetCustomHistogram(name string) (*prometheus.HistogramVec, bool) {
 	histogram, exists := customHistograms[name]
 	return histogram, exists
 }
-

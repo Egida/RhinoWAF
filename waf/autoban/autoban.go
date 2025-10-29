@@ -12,11 +12,11 @@ type Violation struct {
 }
 
 type Config struct {
-	Enabled          bool
-	ViolationLimit   int
-	WindowDuration   time.Duration
-	BanDuration      time.Duration
-	PermanentAfter   int
+	Enabled        bool
+	ViolationLimit int
+	WindowDuration time.Duration
+	BanDuration    time.Duration
+	PermanentAfter int
 }
 
 type Tracker struct {

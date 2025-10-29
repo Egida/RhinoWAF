@@ -10,10 +10,10 @@ import (
 )
 
 type Config struct {
-	Enabled       bool
-	Level         int
-	MinSize       int
-	ContentTypes  []string
+	Enabled      bool
+	Level        int
+	MinSize      int
+	ContentTypes []string
 }
 
 type responseWriter struct {
