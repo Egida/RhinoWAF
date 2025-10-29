@@ -6,6 +6,20 @@
 
 Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinting, challenge system, CSRF protection, and advanced security features.
 
+---
+
+## **🎯 PRIMARY GOAL: BEAT MODSECURITY + OWASP CRS**
+
+### **Our mission is to become the #1 open-source WAF by:**
+- ✅ **Matching ModSecurity's protection** with OWASP CRS-level rule coverage
+- ✅ **Exceeding performance** by 3-5x through modern Go architecture
+- ✅ **Superior UX** with zero-downtime config updates and readable JSON
+- ✅ **Modern threat coverage** that ModSecurity lacks (request smuggling, HTTP/3, adaptive learning)
+
+**We're building the WAF ModSecurity should have been.**
+
+---
+
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
 
