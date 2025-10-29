@@ -954,10 +954,13 @@ Target: Q1 2026
 
 #### **v2.4.1** — Refinements & Polish
 
-Target: November 2025
+Released: October 2025
 
 **Completed:**
 
+-  **JWT token validation** — Token parsing and claims validation (waf/jwt/)
+-  **OAuth2 integration** — OAuth2 flow handlers with major providers (Google, GitHub, Microsoft)
+-  **HTTP/3 support** — QUIC protocol implementation with 0-RTT resumption
 -  **Request body size limits per endpoint** — Per-path body size validation
 -  **IPv6 full support** — Enhanced IP normalization and validation
 -  **Custom error page templates** — Load custom HTML error templates
@@ -971,12 +974,6 @@ Target: November 2025
 -  **Conditional rate limits (time-based)** — Schedule-based rate limiting
 -  **GeoIP accuracy improvements** — Cached CIDR matching
 -  **Custom Prometheus label support** — Dynamic metric registration
-
-**In Progress:**
-
-- 🔄 **JWT token validation** — Token parsing and claims validation
-- 🔄 **OAuth2 integration** — OAuth2 flow handlers
-- 🔄 **HTTP/3 support** — QUIC protocol implementation
 
 ---
 
@@ -1023,4 +1020,4 @@ AGPL-3.0 - requires open sourcing derivative works
 
 ---
 
-**Version**: 2.4.0 | **Status**: Production-ready with HTTP request smuggling detection | **Last Updated**: October 28, 2025
+**Version**: 2.4.2 | **Status**: Production-ready with CSRF protection | **Last Updated**: October 29, 2025
