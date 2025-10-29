@@ -8,11 +8,11 @@ Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinti
 
 ---
 
-## ** PRIMARY GOAL: DESTROY MODSECURITY**
+## **PRIMARY GOAL: BEAY  MODSECURITY**
 
 **ModSecurity is outdated, slow, and painful to use. We're replacing it.**
 
-### **Why ModSecurity sucks:**
+### **What modsec lacks and isnt very good at:**
 - **Regex hell** - Every rule is an unreadable nightmare that takes hours to debug
 - **Performance killer** - Scanning every request with regex patterns destroys throughput
 - **Config restart required** - Change one rule? Restart your entire server. Enjoy your downtime.
