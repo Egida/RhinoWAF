@@ -1,6 +1,6 @@
 {
-  "version": "2.4.0",
-  "last_modified": "2025-10-28T00:00:00Z",
+  "version": "2.4.1",
+  "last_modified": "2025-10-29T00:00:00Z",
   "ddos_protection": {
     "enabled": true,
     "rate_limit": 100,
@@ -88,6 +88,27 @@
     "enabled": true,
     "endpoint": "/metrics",
     "collect_detailed": true
+  },
+  "oauth2": {
+    "enabled": false,
+    "client_id": "",
+    "client_secret": "",
+    "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_url": "https://oauth2.googleapis.com/token",
+    "redirect_url": "https://yourdomain.com/oauth2/callback",
+    "scopes": ["openid", "email", "profile"],
+    "protected_paths": ["/admin", "/api/protected"],
+    "session_timeout": 3600
+  },
+  "http3": {
+    "enabled": false,
+    "port": ":443",
+    "cert_file": "/path/to/cert.pem",
+    "key_file": "/path/to/key.pem",
+    "max_streams": 100,
+    "idle_timeout": 30,
+    "alt_svc_header": true,
+    "domains": []
   },
   "backend": {
     "proxy_url": "http://localhost:9000",

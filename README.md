@@ -1,8 +1,10 @@
 # RhinoWAF
 
-**High-performance Web Application Firewall in Go with advanced DDoS protection, geolocation-based blocking, and granular IP controls.**
+**Version:** 2.4.1
+**Status:** OAuth2 authentication and HTTP/3 support complete
+**Last Updated:** October 29, 2025
 
-**Version**: 2.4.0 | **Status**: Production-ready with HTTP request smuggling detection | **Last Updated**: October 28, 2025
+Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinting, challenge system, and advanced security features.
 
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
@@ -52,8 +54,10 @@ It may seem im doing this very fast, keep in mind im working as a team with 5-6 
 - **Headless Browser Blocking**: Requires canvas/WebGL data that bots often fail
 - **Automatic Collection**: Transparent 1-2 second verification on first visit
 
-### **Production Status (v2.4)**
+## Production Status (v2.4.1)
 
+- **OAuth2 Authentication**: Path-based protection with industry-standard OAuth2 providers
+- **HTTP/3 Support**: QUIC protocol with 0-RTT and automatic fallback to HTTP/2
 - **Challenge System**: Enabled by default (JavaScript challenges)
 - **Browser Fingerprinting**: Enabled by default (bot network detection)
 - **HTTP Request Smuggling Detection**: Active with strict mode, blocks severity 4+ violations
@@ -65,12 +69,51 @@ It may seem im doing this very fast, keep in mind im working as a team with 5-6 
 - **Prometheus Metrics**: Real-time observability at `/metrics` endpoint
 - **Hot-Reload**: Live configuration updates without restart
 
-### **Planned Enhancements (v2.5+)**
-- Advanced rate limiting algorithms (token bucket, sliding window)
-- GraphQL query depth limiting
-- WebSocket security and payload inspection
-- Response header security (CSP, HSTS auto-injection)
-- **v3.0+**: Distributed rate limiting (Redis), Web UI dashboard, Multi-server synchronization
+## Roadmap
+
+### **v2.5 (Planned - Q1 2026)**
+
+**Security Enhancements:**
+- IPv6 full support (dual-stack handling, CIDR matching, rate limiting)
+- Custom error page templates (branded error pages, template engine)
+- Advanced rate limiting algorithms (token bucket, sliding window, leaky bucket)
+- Request/response size limits with configurable thresholds
+- Certificate pinning for backend connections
+
+**Performance & Scalability:**
+- Response caching layer (in-memory, TTL-based, path patterns)
+- Connection pooling improvements (circuit breaker, health checks)
+- Lazy loading for large configurations
+- Optimized GeoIP lookups with LRU cache
+- Reduced memory footprint for session storage
+
+**Protocol Support:**
+- GraphQL query depth limiting and complexity analysis
+- WebSocket security (payload inspection, rate limiting)
+- gRPC proxy support with health checking
+- MQTT protocol support for IoT applications
+
+**Observability:**
+- Custom Prometheus labels (dynamic registration)
+- Distributed tracing with OpenTelemetry
+- Structured logging with log levels
+- Performance profiling endpoints
+- Real-time dashboard API
+
+**Quality of Life:**
+- Hot-reload for TLS certificates
+- Configuration validation tool
+- Health check improvements (dependency checks)
+- Graceful degradation modes
+- Better error messages and diagnostics
+
+### **v3.0+ (Long-term)**
+- Distributed rate limiting (Redis/Memcached backend)
+- Web UI dashboard (React-based, real-time metrics)
+- Multi-server synchronization (cluster mode)
+- Machine learning for anomaly detection
+- Automatic threat intelligence integration
+- Plugin system for custom middleware
 
 ## Quick Start
 
@@ -204,6 +247,56 @@ Each IP rule supports 60+ configuration fields:
 **User Agents**: `allowed_user_agents`, `blocked_user_agents`, `block_headless`, `block_bots`
 
 See `docs/IP_RULES.md` for complete field reference and examples.
+
+## OAuth2 Authentication
+
+Protect specific paths with OAuth2 authentication from industry-standard providers (Google, GitHub, Microsoft, etc). See `docs/OAUTH2.md` for full documentation.
+
+**Quick Setup:**
+
+```bash
+export OAUTH2_CLIENT_ID="your-client-id"
+export OAUTH2_CLIENT_SECRET="your-secret"
+export OAUTH2_AUTH_URL="https://accounts.google.com/o/oauth2/v2/auth"
+export OAUTH2_TOKEN_URL="https://oauth2.googleapis.com/token"
+export OAUTH2_REDIRECT_URL="https://yourdomain.com/oauth2/callback"
+```
+
+Protected paths configured in `features.json`:
+```json
+{
+  "oauth2": {
+    "enabled": true,
+    "protected_paths": ["/admin", "/api/protected"]
+  }
+}
+```
+
+**Endpoints:**
+- `/oauth2/callback` - OAuth2 callback (auto-created)
+- `/oauth2/logout` - Clear session
+
+## HTTP/3 Support
+
+Enable HTTP/3 (QUIC protocol) for faster connections and improved performance. Requires TLS 1.3 certificates.
+
+**Configuration:**
+
+```json
+{
+  "http3": {
+    "enabled": true,
+    "port": ":443",
+    "cert_file": "/path/to/cert.pem",
+    "key_file": "/path/to/key.pem",
+    "alt_svc_header": true
+  }
+}
+```
+
+**Features**: QUIC protocol, 0-RTT resumption, multiplexing, automatic fallback to HTTP/2
+
+**Documentation**: See `docs/HTTP3.md` for TLS setup, client support, and troubleshooting.
 
 ## Challenge System
 

@@ -15,7 +15,9 @@ import (
 	"rhinowaf/waf/fingerprint"
 	"rhinowaf/waf/geo"
 	"rhinowaf/waf/health"
+	"rhinowaf/waf/http3"
 	"rhinowaf/waf/logging"
+	"rhinowaf/waf/oauth2"
 	"rhinowaf/waf/reload"
 	"rhinowaf/waf/reputation"
 	"rhinowaf/waf/webhook"
@@ -168,6 +170,31 @@ func main() {
 	fingerprintTracker := fingerprint.NewTracker(fingerprintConfig)
 	fingerprintMW := fingerprint.NewMiddleware(fingerprintTracker)
 
+	// Initialize OAuth2 handler (v2.4.1)
+	oauth2Handler := oauth2.NewHandler(oauth2.Config{
+		Enabled:        false,
+		ClientID:       os.Getenv("OAUTH2_CLIENT_ID"),
+		ClientSecret:   os.Getenv("OAUTH2_CLIENT_SECRET"),
+		AuthURL:        os.Getenv("OAUTH2_AUTH_URL"),
+		TokenURL:       os.Getenv("OAUTH2_TOKEN_URL"),
+		RedirectURL:    os.Getenv("OAUTH2_REDIRECT_URL"),
+		Scopes:         []string{"openid", "email", "profile"},
+		ProtectedPaths: []string{"/admin", "/api/protected"},
+		SessionTimeout: 3600,
+	})
+
+	// HTTP/3 server setup (v2.4.1)
+	http3Server := http3.NewServer(http3.Config{
+		Enabled:      false, // disabled by default
+		Port:         ":443",
+		CertFile:     os.Getenv("HTTP3_CERT_FILE"),
+		KeyFile:      os.Getenv("HTTP3_KEY_FILE"),
+		MaxStreams:   100,
+		IdleTimeout:  30,
+		AltSvcHeader: true,
+		Domains:      []string{},
+	})
+
 	// Configure challenge middleware
 	challengeConfig := challenge.Config{
 		Enabled:         true, // Challenge system enabled for high-risk traffic
@@ -235,8 +262,8 @@ func main() {
 	mux.HandleFunc("/echo", waf.AdaptiveProtect(handlers.Echo))
 	mux.HandleFunc("/flood", waf.AdaptiveProtect(handlers.Flood))
 
-	// Apply middleware layers: fingerprint -> challenge -> routes
-	handler := fingerprintMW.Handler(challengeMW.Handler(mux))
+	// Apply middleware layers: oauth2 -> fingerprint -> challenge -> routes
+	handler := oauth2Handler.Handle(fingerprintMW.Handler(challengeMW.Handler(mux)))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║                   RhinoWAF v2.3.2                          ║")
@@ -266,6 +293,13 @@ func main() {
 	fmt.Println("   Health check endpoint at /health")
 	fmt.Println("   Prometheus metrics available at /metrics")
 	fmt.Println("   Configuration reload endpoint at /reload (POST)")
+
+	// Start HTTP/3 server if enabled
+	if http3Server.IsRunning() || os.Getenv("HTTP3_ENABLED") == "true" {
+		if err := http3Server.Start(handler); err != nil {
+			log.Printf("[HTTP/3] Failed to start: %v", err)
+		}
+	}
 	fmt.Println("   Automatic file watching is active")
 	fmt.Println("   Manual reload available with: kill -SIGHUP <pid>")
 	fmt.Println("   Attack logs being written to ./logs/ddos.log")
