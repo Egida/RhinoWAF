@@ -13,16 +13,16 @@ import (
 
 // Fingerprint represents a unique browser/device signature
 type Fingerprint struct {
-	Hash         string // SHA-256 hash of all fingerprint components
+	Hash         string
 	UserAgent    string
 	AcceptLang   string
 	AcceptEnc    string
-	ScreenRes    string // From client-side JS
-	Timezone     string // From client-side JS
-	Canvas       string // Canvas fingerprint hash
-	WebGL        string // WebGL fingerprint hash
-	Fonts        string // Available fonts list
-	Plugins      string // Browser plugins
+	ScreenRes    string // client-side JS
+	Timezone     string
+	Canvas       string // canvas hash
+	WebGL        string // webgl hash
+	Fonts        string
+	Plugins      string
 	DoNotTrack   string
 	Platform     string
 	CPUCores     string
@@ -30,7 +30,7 @@ type Fingerprint struct {
 	CreatedAt    time.Time
 	LastSeen     time.Time
 	SeenCount    int
-	IPs          []string // IPs that used this fingerprint
+	IPs          []string // IPs using this fingerprint
 }
 
 // FingerprintData contains client-side collected data
@@ -51,21 +51,21 @@ type FingerprintData struct {
 
 // Tracker manages fingerprint tracking and analysis
 type Tracker struct {
-	fingerprints map[string]*Fingerprint // hash -> fingerprint
-	ipToHash     map[string][]string     // IP -> fingerprint hashes
-	rateLimiter  *RateLimiter            // Rate limiter for fingerprint collection
+	fingerprints map[string]*Fingerprint
+	ipToHash     map[string][]string
+	rateLimiter  *RateLimiter
 	mu           sync.RWMutex
 	config       Config
 }
 
 type Config struct {
 	Enabled              bool
-	MaxIPsPerFingerprint int           // Max IPs allowed per fingerprint (detect bot networks)
-	MaxAgeForReuse       time.Duration // How long fingerprint can be reused
-	SuspiciousThreshold  int           // Number of IPs to flag as suspicious
-	BlockOnExceed        bool          // Block if exceeds max IPs
-	RequireClientData    bool          // Require canvas/WebGL data
-	CollectionRateLimit  int           // Max fingerprint collection requests per IP per minute
+	MaxIPsPerFingerprint int           // detect bot networks
+	MaxAgeForReuse       time.Duration // how long fingerprint can be reused
+	SuspiciousThreshold  int           // number of IPs to flag as sus
+	BlockOnExceed        bool
+	RequireClientData    bool // require canvas/WebGL data
+	CollectionRateLimit  int  // max fingerprint requests per IP per minute
 }
 
 // RateLimiter tracks request rates per IP for fingerprint collection
@@ -102,7 +102,6 @@ func (rl *RateLimiter) cleanup() {
 }
 
 // Allow checks if the IP is allowed to make a request
-// Returns true if allowed, false if rate limit exceeded
 func (rl *RateLimiter) Allow(ip string, maxRequests int, window time.Duration) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
@@ -150,7 +149,7 @@ func NewTracker(config Config) *Tracker {
 		config:       config,
 	}
 
-	// Set defaults
+	// sane defaults
 	if t.config.MaxIPsPerFingerprint == 0 {
 		t.config.MaxIPsPerFingerprint = 5
 	}
@@ -161,14 +160,14 @@ func NewTracker(config Config) *Tracker {
 		t.config.MaxAgeForReuse = 24 * time.Hour
 	}
 	if t.config.CollectionRateLimit == 0 {
-		t.config.CollectionRateLimit = 10 // 10 requests per minute per IP
+		t.config.CollectionRateLimit = 10
 	}
 
 	go t.cleanupExpired()
 	return t
 }
 
-// ExtractFromRequest extracts server-side fingerprint components
+// ExtractFromRequest grabs server-side fingerprint components
 func (t *Tracker) ExtractFromRequest(r *http.Request) *Fingerprint {
 	fp := &Fingerprint{
 		UserAgent:  r.Header.Get("User-Agent"),
@@ -190,11 +189,10 @@ func (t *Tracker) MergeClientData(fp *Fingerprint, data *FingerprintData) {
 	fp.Canvas = data.Canvas
 	fp.WebGL = data.WebGL
 
-	// Sort fonts for consistent hashing
+	// sort for consistent hashing
 	sort.Strings(data.Fonts)
 	fp.Fonts = strings.Join(data.Fonts, ",")
 
-	// Sort plugins for consistent hashing
 	sort.Strings(data.Plugins)
 	fp.Plugins = strings.Join(data.Plugins, ",")
 
@@ -206,11 +204,10 @@ func (t *Tracker) MergeClientData(fp *Fingerprint, data *FingerprintData) {
 		fp.DoNotTrack = data.DoNotTrack
 	}
 
-	// Generate hash from all components
+	// generate hash from all components
 	fp.Hash = t.generateHash(fp)
 }
 
-// generateHash creates a SHA-256 hash from all fingerprint components
 func (t *Tracker) generateHash(fp *Fingerprint) string {
 	components := []string{
 		fp.UserAgent,
@@ -242,31 +239,30 @@ func (t *Tracker) Track(ip string, fp *Fingerprint) error {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	// Check if fingerprint exists
 	existing, exists := t.fingerprints[fp.Hash]
 	if exists {
-		// Update existing fingerprint
+		// update existing
 		existing.LastSeen = time.Now()
 		existing.SeenCount++
 
-		// Add IP if not already tracked
+		// add IP if not already in list
 		if !contains(existing.IPs, ip) {
 			existing.IPs = append(existing.IPs, ip)
 		}
 
-		// Check if exceeds max IPs
+		// TODO: maybe log when we hit the threshold not just block
 		if len(existing.IPs) > t.config.MaxIPsPerFingerprint {
 			if t.config.BlockOnExceed {
 				return fmt.Errorf("fingerprint %s exceeds max IPs (%d)", fp.Hash[:8], len(existing.IPs))
 			}
 		}
 	} else {
-		// New fingerprint
+		// new fingerprint
 		fp.IPs = []string{ip}
 		t.fingerprints[fp.Hash] = fp
 	}
 
-	// Track IP to fingerprint mapping
+	// track IP to fingerprint mapping
 	t.ipToHash[ip] = append(t.ipToHash[ip], fp.Hash)
 
 	return nil
@@ -283,7 +279,7 @@ func (t *Tracker) Check(ip string, fp *Fingerprint) (allowed bool, reason string
 
 	existing, exists := t.fingerprints[fp.Hash]
 	if !exists {
-		// New fingerprint - require client data if configured
+		// new fingerprint - require client data if configured
 		if t.config.RequireClientData {
 			if fp.Canvas == "" || fp.WebGL == "" {
 				return false, "missing required client fingerprint data"
@@ -292,12 +288,12 @@ func (t *Tracker) Check(ip string, fp *Fingerprint) (allowed bool, reason string
 		return true, ""
 	}
 
-	// Check if fingerprint is too old for reuse
+	// fingerprint too old for reuse
 	if time.Since(existing.CreatedAt) > t.config.MaxAgeForReuse {
 		return false, "fingerprint expired (possible replay attack)"
 	}
 
-	// Check if fingerprint is used by too many IPs
+	// fingerprint used by too many IPs
 	if len(existing.IPs) >= t.config.MaxIPsPerFingerprint {
 		if !contains(existing.IPs, ip) {
 			if t.config.BlockOnExceed {

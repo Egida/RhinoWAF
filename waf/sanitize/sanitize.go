@@ -8,7 +8,7 @@ import (
 	"unicode/utf8"
 )
 
-// Pre-compiled regexes for performance
+// pre-compiled for performance
 var (
 	sqlCommentRegex   = regexp.MustCompile(`--|\b(AND|OR)\b.*?\b(=|>|<)\b`)
 	semicolonRegex    = regexp.MustCompile(`;`)
@@ -20,11 +20,10 @@ var (
 	htmlTagRegex      = regexp.MustCompile(`(?i)<.*?>`)
 	schemeRegex       = regexp.MustCompile(`(?i)(data|vbscript|file):`)
 
-	// Detection patterns
 	sqlOrEqualRegex = regexp.MustCompile(`(?i)or\s+\d+=\d+`)
 	dropTableRegex  = regexp.MustCompile(`(?i)drop\s+table`)
 
-	// Header injection patterns
+	// header injection detection
 	crlfRegex        = regexp.MustCompile(`[\r\n]`)
 	headerSplitRegex = regexp.MustCompile(`[\r\n]\s*[a-zA-Z-]+\s*:`)
 )
@@ -125,6 +124,7 @@ func Clean(s string) string {
 func IsMalicious(r *http.Request) bool {
 	check := func(s string) bool {
 		s = strings.ToLower(s)
+		// common attack patterns
 		if strings.Contains(s, "<script") || strings.Contains(s, "javascript:") || strings.Contains(s, "union select") {
 			return true
 		}
@@ -187,7 +187,7 @@ func IsMalicious(r *http.Request) bool {
 		"Content-Type":      true,
 		"Content-Length":    true,
 		"Host":              true,
-		"User-Agent":        true, // Legitimate user agents might contain keywords
+		"User-Agent":        true, // legit user agents might have these keywords
 		"Accept":            true,
 		"Accept-Encoding":   true,
 		"Accept-Language":   true,

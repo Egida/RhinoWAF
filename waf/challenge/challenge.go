@@ -29,7 +29,7 @@ type Session struct {
 	IssuedAt      time.Time
 	ExpiresAt     time.Time
 	Verified      bool
-	Challenge     string
+	Challenge     string // POW challenge string
 	Difficulty    int
 }
 
@@ -112,7 +112,7 @@ func (m *Manager) GetSession(token string) (*Session, bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
-	// Use constant-time comparison to prevent timing attacks
+	// constant-time comparison to prevent timing attacks
 	for storedToken, session := range m.sessions {
 		if subtle.ConstantTimeCompare([]byte(storedToken), []byte(token)) == 1 {
 			if time.Now().After(session.ExpiresAt) {

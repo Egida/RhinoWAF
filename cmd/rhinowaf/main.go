@@ -29,17 +29,16 @@ import (
 )
 
 func main() {
-	// Initialize log rotation (v2.3.1)
+	// setup log rotation - keeps logs from eating disk space
 	logWriter := logging.SetupRotation(logging.Config{
 		Enabled:    true,
 		Filename:   "./logs/rhinowaf.log",
-		MaxSize:    100, // 100MB
+		MaxSize:    100,
 		MaxBackups: 3,
-		MaxAge:     28, // days
+		MaxAge:     28,
 		Compress:   true,
 	})
 
-	// Initialize DDoS logger with log rotation
 	ddos.InitLogger(&ddos.LoggerConfig{
 		LogPath:              "./logs/ddos.log",
 		Enabled:              true,
@@ -53,47 +52,45 @@ func main() {
 		HumanReadablePath:    "./logs/ddos-readable.log",
 	})
 
-	// Also log general messages to rotated file
 	log.SetOutput(logWriter)
 
-	// Initialize webhook notifications (v2.3.1)
+	// webhook config - disabled by default, set URLs in config to enable
 	webhook.Init(webhook.Config{
-		Enabled:       false,      // Enable when URLs configured
-		URLs:          []string{}, // Add Slack/Discord/Teams URLs here
-		MinSeverity:   "high",     // Only high/critical/emergency alerts
-		Timeout:       5,          // 5 seconds
+		Enabled:       false,
+		URLs:          []string{},
+		MinSeverity:   "high",
+		Timeout:       5,
 		MaxRetries:    2,
-		SlackFormat:   false, // Enable for Slack URLs
-		DiscordFormat: false, // Enable for Discord URLs
-		TeamsFormat:   false, // Enable for Microsoft Teams URLs
+		SlackFormat:   false,
+		DiscordFormat: false,
+		TeamsFormat:   false,
 	})
 
-	// Initialize IP reputation checking (v2.3.1)
+	// IP reputation - uses AbuseIPDB and IPQualityScore if keys are set
 	reputation.Init(reputation.Config{
-		Enabled:           false,  // Enable when API keys configured
-		Provider:          "both", // Use both AbuseIPDB and IPQualityScore
+		Enabled:           false,
+		Provider:          "both",
 		AbuseIPDBKey:      os.Getenv("ABUSEIPDB_API_KEY"),
 		IPQualityScoreKey: os.Getenv("IPQS_API_KEY"),
-		CacheDuration:     60,    // Cache for 60 minutes
-		ScoreThreshold:    75,    // Block if score >= 75
-		AutoBlock:         false, // Enable for automatic blocking
-		AutoChallenge:     true,  // Challenge suspicious IPs
-		Timeout:           5,     // 5 seconds
+		CacheDuration:     60,
+		ScoreThreshold:    75,
+		AutoBlock:         false,
+		AutoChallenge:     true,
+		Timeout:           5,
 	})
 
-	// Initialize per-user rate limiting (v2.3.1)
+	// per-user rate limits with JWT
 	auth.Init(auth.Config{
-		Enabled:            false, // Enable when JWT configured
+		Enabled:            false,
 		JWTSecret:          os.Getenv("JWT_SECRET"),
 		JWTHeader:          "Authorization",
 		SessionCookie:      "session_id",
-		RateLimitPerUser:   1000,       // 1000 requests per user
-		RateLimitWindow:    60,         // Per 60 seconds
-		WhitelistUsernames: []string{}, // Add admin usernames here
+		RateLimitPerUser:   1000,
+		RateLimitWindow:    60,
+		WhitelistUsernames: []string{},
 		TrackAnonymous:     false,
 	})
 
-	// Initialize IP manager with advanced rules
 	if err := ddos.InitIPManager("./config/ip_rules.json", true); err != nil {
 		log.Printf("Warning: Could not initialize IP manager - %v (WAF will run with limited protection)", err)
 	}
@@ -103,7 +100,7 @@ func main() {
 		log.Printf("Warning: Could not load GeoIP database - %v (geolocation blocking will be unavailable)", err)
 	}
 
-	// Initialize hot-reload manager
+	// hot-reload setup so we don't need to restart on config changes
 	reloadMgr, err := reload.NewManager(reload.Config{
 		IPRulesPath:  "./config/ip_rules.json",
 		GeoDBPath:    "./config/geoip.json",
@@ -119,7 +116,7 @@ func main() {
 		}
 	}()
 
-	// Setup SIGHUP handler for manual reload
+	// catch SIGHUP for manual config reload
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGHUP)
 	go func() {
@@ -135,10 +132,9 @@ func main() {
 		}
 	}()
 
-	// Initialize challenge manager
 	challengeMgr := challenge.NewManager()
 
-	// Configure CAPTCHA providers from environment variables
+	// setup captcha if env vars are set
 	if hcaptchaKey := os.Getenv("HCAPTCHA_SITE_KEY"); hcaptchaKey != "" {
 		secret := os.Getenv("HCAPTCHA_SECRET")
 		if secret == "" {
@@ -158,20 +154,20 @@ func main() {
 		}
 	}
 
-	// Initialize fingerprint tracker (CONFIGURABLE)
-	// For production with strict bot blocking: Set BlockOnExceed=true, RequireClientData=true
+	// fingerprint tracking - helps catch bot networks sharing fingerprints
+	// TODO: might want to make BlockOnExceed=true in prod
 	fingerprintConfig := fingerprint.Config{
-		Enabled:              true, // Browser fingerprinting enabled
-		MaxIPsPerFingerprint: 5,    // Max IPs allowed per fingerprint (detect bot networks)
+		Enabled:              true,
+		MaxIPsPerFingerprint: 5,
 		MaxAgeForReuse:       24 * time.Hour,
-		SuspiciousThreshold:  3,     // Flag as suspicious when 3+ IPs share fingerprint
-		BlockOnExceed:        false, // Set true for production: Block IPs exceeding limits
-		RequireClientData:    false, // Set true for production: Require full browser fingerprinting
+		SuspiciousThreshold:  3,
+		BlockOnExceed:        false,
+		RequireClientData:    false,
 	}
 	fingerprintTracker := fingerprint.NewTracker(fingerprintConfig)
 	fingerprintMW := fingerprint.NewMiddleware(fingerprintTracker)
 
-	// Initialize CSRF protection (v2.4.2)
+	// CSRF protection
 	csrfManager := csrf.NewManager(csrf.Config{
 		Enabled:       true,
 		TokenLength:   32,
@@ -179,16 +175,16 @@ func main() {
 		CookieName:    "csrf_token",
 		HeaderName:    "X-CSRF-Token",
 		FormFieldName: "csrf_token",
-		SecureCookie:  false, // set true when using HTTPS
+		SecureCookie:  false, // flip to true when you add HTTPS
 		SameSite:      http.SameSiteLaxMode,
 		ExemptMethods: []string{"GET", "HEAD", "OPTIONS", "TRACE"},
 		ExemptPaths:   []string{"/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"},
-		DoubleSubmit:  false, // set true for stateless double-submit pattern
+		DoubleSubmit:  false,
 		ErrorMessage:  "CSRF validation failed",
 	})
 	csrfMW := csrf.NewMiddleware(csrfManager)
 
-	// Initialize OAuth2 handler (v2.4.1)
+	// OAuth2 setup
 	oauth2Handler := oauth2.NewHandler(oauth2.Config{
 		Enabled:        false,
 		ClientID:       os.Getenv("OAUTH2_CLIENT_ID"),

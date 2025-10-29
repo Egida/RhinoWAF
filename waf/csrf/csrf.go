@@ -19,13 +19,13 @@ type Config struct {
 	SameSite      http.SameSite
 	ExemptMethods []string
 	ExemptPaths   []string
-	DoubleSubmit  bool // use double-submit cookie pattern
+	DoubleSubmit  bool
 	ErrorMessage  string
 }
 
 type Manager struct {
 	config Config
-	tokens *sync.Map // map[string]*tokenData
+	tokens *sync.Map
 }
 
 type tokenData struct {
@@ -35,6 +35,7 @@ type tokenData struct {
 }
 
 func NewManager(cfg Config) *Manager {
+	// set some sane defaults
 	if cfg.TokenLength == 0 {
 		cfg.TokenLength = 32
 	}
@@ -62,7 +63,6 @@ func NewManager(cfg Config) *Manager {
 		tokens: &sync.Map{},
 	}
 
-	// cleanup expired tokens periodically
 	go mgr.cleanupExpired()
 
 	return mgr
@@ -118,6 +118,7 @@ func (m *Manager) validateToken(sessionID, token string) bool {
 	return data.value == token
 }
 
+// cleanup runs in background to remove expired tokens
 func (m *Manager) cleanupExpired() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -135,11 +136,10 @@ func (m *Manager) cleanupExpired() {
 }
 
 func (m *Manager) getSessionID(r *http.Request) string {
-	// try session cookie first
 	if cookie, err := r.Cookie("session_id"); err == nil {
 		return cookie.Value
 	}
-	// fallback to IP-based session
+	// fall back to IP if no session cookie
 	return r.RemoteAddr
 }
 
@@ -150,13 +150,11 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 			return
 		}
 
-		// skip exempt methods
 		if m.isExemptMethod(r.Method) {
 			next.ServeHTTP(w, r)
 			return
 		}
 
-		// skip exempt paths
 		if m.isExemptPath(r.URL.Path) {
 			next.ServeHTTP(w, r)
 			return
@@ -165,13 +163,12 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 		sessionID := m.getSessionID(r)
 
 		if m.config.DoubleSubmit {
-			// double-submit cookie pattern
+			// double-submit cookie pattern - check cookie matches header/form
 			cookieToken := ""
 			if cookie, err := r.Cookie(m.config.CookieName); err == nil {
 				cookieToken = cookie.Value
 			}
 
-			// check header or form field
 			headerToken := r.Header.Get(m.config.HeaderName)
 			if headerToken == "" {
 				r.ParseForm()
@@ -186,10 +183,9 @@ func (m *Manager) Protect(next http.Handler) http.Handler {
 			// server-side validation
 			var providedToken string
 
-			// check header first
 			providedToken = r.Header.Get(m.config.HeaderName)
 
-			// fallback to form field
+			// check form field if no header
 			if providedToken == "" {
 				r.ParseForm()
 				providedToken = r.FormValue(m.config.FormFieldName)

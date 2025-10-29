@@ -12,13 +12,13 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := ddos.GetIP(r)
 
-		// Validate headers for malformed or malicious content (prevents header injection)
+		// validate headers first (prevents header injection)
 		if valid, reason := sanitize.ValidateHeaders(r); !valid {
 			templates.RenderBlockedError(w, ip, reason)
 			return
 		}
 
-		// Check advanced IP rules first (most specific)
+		// check IP rules (most specific)
 		ipMgr := ddos.GetIPManager()
 		if ipMgr != nil {
 			ctx := &ddos.RequestContext{
