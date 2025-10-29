@@ -8,15 +8,29 @@ Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinti
 
 ---
 
-## **🎯 PRIMARY GOAL: BEAT MODSECURITY + OWASP CRS**
+## **🎯 PRIMARY GOAL: DESTROY MODSECURITY**
 
-### **Our mission is to become the #1 open-source WAF by:**
--  **Matching ModSecurity's protection** with OWASP CRS-level rule coverage
--  **Exceeding performance** by 3-5x through modern Go architecture
--  **Superior UX** with zero-downtime config updates and readable JSON
--  **Modern threat coverage** that ModSecurity lacks (request smuggling, HTTP/3, adaptive learning)
+**ModSecurity is outdated, slow, and painful to use. We're replacing it.**
 
-**We're building the WAF ModSecurity should have been.**
+### **Why ModSecurity sucks:**
+- **Regex hell** - Every rule is an unreadable nightmare that takes hours to debug
+- **Performance killer** - Scanning every request with regex patterns destroys throughput
+- **Config restart required** - Change one rule? Restart your entire server. Enjoy your downtime.
+- **False positive hell** - Spend weeks tuning rules or watch legitimate traffic get blocked
+- **Legacy C codebase** - Written before modern security threats existed
+- **No adaptive learning** - Static rules that can't learn from attack patterns
+- **Missing modern attacks** - Request smuggling? HTTP/3? Good luck implementing those.
+
+### **What we do better:**
+- ✅ **Clean JSON config** - Readable by humans, not regex archaeologists
+- ✅ **3-5x faster** - Go architecture that doesn't regex-scan everything
+- ✅ **Hot-reload** - Update config without restarting. Zero downtime.
+- ✅ **Adaptive learning** - Reputation system that learns from attacks
+- ✅ **Modern threats** - Request smuggling, HTTP/3, fingerprinting built-in
+- ✅ **Challenge system** - JavaScript + PoW that ModSecurity doesn't have
+- ✅ **Maintainable code** - Modern Go, not 15-year-old C spaghetti
+
+**ModSecurity had its time. That time is over.**
 
 ---
 
