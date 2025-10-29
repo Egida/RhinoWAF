@@ -11,6 +11,7 @@ import (
 	"rhinowaf/waf"
 	"rhinowaf/waf/auth"
 	"rhinowaf/waf/challenge"
+	"rhinowaf/waf/csrf"
 	"rhinowaf/waf/ddos"
 	"rhinowaf/waf/fingerprint"
 	"rhinowaf/waf/geo"
@@ -170,6 +171,23 @@ func main() {
 	fingerprintTracker := fingerprint.NewTracker(fingerprintConfig)
 	fingerprintMW := fingerprint.NewMiddleware(fingerprintTracker)
 
+	// Initialize CSRF protection (v2.4.2)
+	csrfManager := csrf.NewManager(csrf.Config{
+		Enabled:       true,
+		TokenLength:   32,
+		TokenTTL:      1 * time.Hour,
+		CookieName:    "csrf_token",
+		HeaderName:    "X-CSRF-Token",
+		FormFieldName: "csrf_token",
+		SecureCookie:  false, // set true when using HTTPS
+		SameSite:      http.SameSiteLaxMode,
+		ExemptMethods: []string{"GET", "HEAD", "OPTIONS", "TRACE"},
+		ExemptPaths:   []string{"/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"},
+		DoubleSubmit:  false, // set true for stateless double-submit pattern
+		ErrorMessage:  "CSRF validation failed",
+	})
+	csrfMW := csrf.NewMiddleware(csrfManager)
+
 	// Initialize OAuth2 handler (v2.4.1)
 	oauth2Handler := oauth2.NewHandler(oauth2.Config{
 		Enabled:        false,
@@ -215,11 +233,14 @@ func main() {
 	// Wrap handlers with both WAF and challenge protection
 	mux := http.NewServeMux()
 
+	// CSRF token endpoint (v2.4.2) - no WAF protection for token generation
+	mux.HandleFunc("/csrf/token", csrfMW.TokenHandler)
+
 	// Prometheus metrics endpoint (no WAF protection for monitoring)
 	mux.Handle("/metrics", promhttp.Handler())
 
-	// Health check endpoint (v2.3.2)
-	mux.HandleFunc("/health", health.Handler("v2.3.2"))
+	// Health check endpoint (v2.4.2)
+	mux.HandleFunc("/health", health.Handler("v2.4.2"))
 
 	// Reload endpoint - triggers manual configuration reload (no WAF protection)
 	mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
@@ -262,11 +283,11 @@ func main() {
 	mux.HandleFunc("/echo", waf.AdaptiveProtect(handlers.Echo))
 	mux.HandleFunc("/flood", waf.AdaptiveProtect(handlers.Flood))
 
-	// Apply middleware layers: oauth2 -> fingerprint -> challenge -> routes
-	handler := oauth2Handler.Handle(fingerprintMW.Handler(challengeMW.Handler(mux)))
+	// Apply middleware layers: oauth2 -> csrf -> fingerprint -> challenge -> routes
+	handler := oauth2Handler.Handle(csrfMW.Handler(fingerprintMW.Handler(challengeMW.Handler(mux))))
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
-	fmt.Println("║                   RhinoWAF v2.3.2                          ║")
+	fmt.Println("║                   RhinoWAF v2.4.2                          ║")
 	fmt.Println("║              Production Web Application Firewall            ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
@@ -275,6 +296,7 @@ func main() {
 	fmt.Println("   - Advanced IP Rules (60+ configurable fields)")
 	fmt.Println("   - Challenge System (JavaScript and Proof-of-Work)")
 	fmt.Println("   - Browser Fingerprinting for Bot Detection")
+	fmt.Println("   - CSRF Protection with Token Validation")
 	fmt.Println("   - Geolocation-based Access Control")
 	fmt.Println("   - Proxy, Tor, and VPN Detection")
 	fmt.Println("   - Input Sanitization and XSS Protection")

@@ -110,6 +110,19 @@
     "alt_svc_header": true,
     "domains": []
   },
+  "csrf": {
+    "enabled": true,
+    "token_length": 32,
+    "token_ttl_seconds": 3600,
+    "cookie_name": "csrf_token",
+    "header_name": "X-CSRF-Token",
+    "form_field_name": "csrf_token",
+    "secure_cookie": false,
+    "same_site": "Lax",
+    "exempt_methods": ["GET", "HEAD", "OPTIONS", "TRACE"],
+    "exempt_paths": ["/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"],
+    "double_submit": false
+  },
   "backend": {
     "proxy_url": "http://localhost:9000",
     "timeout_seconds": 30,

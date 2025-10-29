@@ -1,10 +1,10 @@
 # RhinoWAF
 
-**Version:** 2.4.1
-**Status:** OAuth2 authentication and HTTP/3 support complete
+**Version:** 2.4.2
+**Status:** CSRF Protection with Token Validation Complete
 **Last Updated:** October 29, 2025
 
-Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinting, challenge system, and advanced security features.
+Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinting, challenge system, CSRF protection, and advanced security features.
 
 ## Note
 It may seem im doing this very fast, keep in mind im working as a team with 5-6 friends so we work very fast together to deliver the best performance we can
@@ -54,8 +54,18 @@ It may seem im doing this very fast, keep in mind im working as a team with 5-6 
 - **Headless Browser Blocking**: Requires canvas/WebGL data that bots often fail
 - **Automatic Collection**: Transparent 1-2 second verification on first visit
 
-## Production Status (v2.4.1)
+### **CSRF Protection (v2.4.2)**
+- **Token-Based Validation**: Cryptographically secure tokens for state-changing requests
+- **Dual Protection Modes**: Server-side (stateful) and double-submit cookie (stateless)
+- **Flexible Integration**: Supports HTTP headers, form fields, and cookies
+- **Automatic Expiration**: Configurable token TTL with background cleanup
+- **Method Exemptions**: GET/HEAD/OPTIONS/TRACE bypass CSRF validation
+- **Path Exemptions**: Configurable whitelist for public endpoints
+- **Token Endpoint**: GET /csrf/token returns JSON with token and configuration
 
+## Production Status (v2.4.2)
+
+- **CSRF Protection**: Enabled with token validation for all state-changing requests
 - **OAuth2 Authentication**: Path-based protection with industry-standard OAuth2 providers
 - **HTTP/3 Support**: QUIC protocol with 0-RTT and automatic fallback to HTTP/2
 - **Challenge System**: Enabled by default (JavaScript challenges)
@@ -969,6 +979,41 @@ Target: November 2025
 - 🔄 **HTTP/3 support** — QUIC protocol implementation
 
 ---
+
+## Documentation
+
+Comprehensive documentation is available in the `docs/` directory:
+
+### Core Security Features
+
+- **[IP_RULES.md](docs/configuration/IP_RULES.md)** - Advanced IP rule configuration (60+ fields, time-based restrictions, behavioral limits)
+- **[CSRF_PROTECTION.md](docs/features/CSRF_PROTECTION.md)** - Cross-Site Request Forgery protection with token validation
+- **[CHALLENGE_SYSTEM.md](docs/features/CHALLENGE_SYSTEM.md)** - Bot detection with JavaScript, PoW, hCaptcha, and Turnstile challenges
+- **[CHALLENGE_EXAMPLES.md](docs/examples/CHALLENGE_EXAMPLES.md)** - Challenge system code examples and integration patterns
+- **[FINGERPRINTING.md](docs/features/FINGERPRINTING.md)** - Browser fingerprinting for bot network detection
+- **[FINGERPRINTING_EXAMPLES.md](docs/examples/FINGERPRINTING_EXAMPLES.md)** - Fingerprinting implementation examples
+- **[SMUGGLING_DETECTION.md](docs/features/SMUGGLING_DETECTION.md)** - HTTP request smuggling attack detection and mitigation
+
+### Authentication & Protocols
+
+- **[OAUTH2.md](docs/protocols/OAUTH2.md)** - OAuth2 authentication integration with major providers
+- **[HTTP3.md](docs/protocols/HTTP3.md)** - HTTP/3 and QUIC protocol configuration
+
+### Configuration
+
+- **[PRODUCTION_CONFIG.md](docs/configuration/PRODUCTION_CONFIG.md)** - Production configuration guide
+
+### Version History
+
+- **[V2.2_FEATURES.md](docs/changelogs/V2.2_FEATURES.md)** - Version 2.2 release notes
+- **[V2.3_FEATURES.md](docs/changelogs/V2.3_FEATURES.md)** - Version 2.3 release notes (metrics, hot-reload, logging)
+- **[V2.4_FEATURES.md](docs/changelogs/V2.4_FEATURES.md)** - Version 2.4 release notes
+- **[V2.4.1_FEATURES.md](docs/changelogs/V2.4.1_FEATURES.md)** - Version 2.4.1 release notes (OAuth2, HTTP/3)
+- **[V2.4.2_FEATURES.md](docs/changelogs/V2.4.2_FEATURES.md)** - Version 2.4.2 release notes (CSRF protection)
+
+### Roadmap
+
+- **[V2.5_ROADMAP.md](docs/roadmap/V2.5_ROADMAP.md)** - Future development plans
 
 ---
 
