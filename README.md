@@ -8,7 +8,7 @@ Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinti
 
 ---
 
-## **🎯 PRIMARY GOAL: DESTROY MODSECURITY**
+## ** PRIMARY GOAL: DESTROY MODSECURITY**
 
 **ModSecurity is outdated, slow, and painful to use. We're replacing it.**
 
@@ -22,13 +22,13 @@ Modern Web Application Firewall (WAF) with DDoS protection, browser fingerprinti
 - **Missing modern attacks** - Request smuggling? HTTP/3? Good luck implementing those.
 
 ### **What we do better:**
-- ✅ **Clean JSON config** - Readable by humans, not regex archaeologists
-- ✅ **3-5x faster** - Go architecture that doesn't regex-scan everything
-- ✅ **Hot-reload** - Update config without restarting. Zero downtime.
-- ✅ **Adaptive learning** - Reputation system that learns from attacks
-- ✅ **Modern threats** - Request smuggling, HTTP/3, fingerprinting built-in
-- ✅ **Challenge system** - JavaScript + PoW that ModSecurity doesn't have
-- ✅ **Maintainable code** - Modern Go, not 15-year-old C spaghetti
+-  **Clean JSON config** - Readable by humans, not regex archaeologists
+-  **3-5x faster** - Go architecture that doesn't regex-scan everything
+-  **Hot-reload** - Update config without restarting. Zero downtime.
+-  **Adaptive learning** - Reputation system that learns from attacks
+-  **Modern threats** - Request smuggling, HTTP/3, fingerprinting built-in
+-  **Challenge system** - JavaScript + PoW that ModSecurity doesn't have
+-  **Maintainable code** - Modern Go, not 15-year-old C spaghetti
 
 **ModSecurity had its time. That time is over.**
 
