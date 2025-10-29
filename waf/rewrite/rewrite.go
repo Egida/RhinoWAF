@@ -66,8 +66,10 @@ func (h *Handler) NormalizePath(path string) string {
 		if part == "" || part == "." {
 			continue
 		}
-		if part == ".." && len(normalized) > 0 {
-			normalized = normalized[:len(normalized)-1]
+		if part == ".." {
+			if len(normalized) > 0 {
+				normalized = normalized[:len(normalized)-1]
+			}
 			continue
 		}
 		normalized = append(normalized, part)
