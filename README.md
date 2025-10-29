@@ -849,6 +849,34 @@ Target: Q1 2026
 - **Machine learning anomaly detection** — Behavioral analysis for 0-day threats
 - **Custom Lua scripting** — Advanced rule customization engine
 
+#### **v2.4.1** — Refinements & Polish
+
+Target: November 2025
+
+**Completed:**
+
+-  **Request body size limits per endpoint** — Per-path body size validation
+-  **IPv6 full support** — Enhanced IP normalization and validation
+-  **Custom error page templates** — Load custom HTML error templates
+-  **Rate limit exemption lists** — Whitelist IPs, user agents, and paths
+-  **Automatic IP ban after N violations** — Violation tracking with auto-ban
+-  **URL rewrite rules** — Regex-based URL rewriting middleware
+-  **Request/response header manipulation** — Add/remove/modify headers
+-  **CORS policy enforcement** — Preflight handling and CORS headers
+-  **Brotli compression** — High-efficiency compression support
+-  **Cache control headers** — Per-path cache policy injection
+-  **Conditional rate limits (time-based)** — Schedule-based rate limiting
+-  **GeoIP accuracy improvements** — Cached CIDR matching
+-  **Custom Prometheus label support** — Dynamic metric registration
+
+**In Progress:**
+
+- 🔄 **JWT token validation** — Token parsing and claims validation
+- 🔄 **OAuth2 integration** — OAuth2 flow handlers
+- 🔄 **HTTP/3 support** — QUIC protocol implementation
+
+---
+
 ---
 
 ## License

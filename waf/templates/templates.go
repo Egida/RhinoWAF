@@ -4,6 +4,8 @@ import (
 	_ "embed"
 	"html/template"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -11,6 +13,7 @@ import (
 var errorTemplate string
 
 var tmpl *template.Template
+var customTemplates map[int]*template.Template
 
 func init() {
 	var err error
@@ -18,6 +21,7 @@ func init() {
 	if err != nil {
 		panic("Failed to parse error template: " + err.Error())
 	}
+	customTemplates = make(map[int]*template.Template)
 }
 
 // ErrorData contains data for error page rendering
@@ -28,6 +32,33 @@ type ErrorData struct {
 	Message    string
 	Details    string
 	Timestamp  string
+}
+
+func LoadCustomTemplate(statusCode int, templatePath string) error {
+	absPath, err := filepath.Abs(templatePath)
+	if err != nil {
+		return err
+	}
+
+	content, err := os.ReadFile(absPath)
+	if err != nil {
+		return err
+	}
+
+	t, err := template.New("custom").Parse(string(content))
+	if err != nil {
+		return err
+	}
+
+	customTemplates[statusCode] = t
+	return nil
+}
+
+func getTemplate(statusCode int) *template.Template {
+	if ct, exists := customTemplates[statusCode]; exists {
+		return ct
+	}
+	return tmpl
 }
 
 // RenderError renders a custom error page
@@ -58,7 +89,8 @@ func RenderError(w http.ResponseWriter, statusCode int, title, message, details 
 		Timestamp:  time.Now().Format("2006-01-02 15:04:05 MST"),
 	}
 
-	if err := tmpl.Execute(w, data); err != nil {
+	activeTemplate := getTemplate(statusCode)
+	if err := activeTemplate.Execute(w, data); err != nil {
 		// Fallback to plain text if template fails
 		http.Error(w, message, statusCode)
 	}

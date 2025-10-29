@@ -94,3 +94,36 @@ func mustParseCIDR(s string) *net.IPNet {
 	}
 	return ipnet
 }
+
+func NormalizeIP(ip string) string {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return ip
+	}
+
+	if parsed.To4() != nil {
+		return parsed.To4().String()
+	}
+
+	return parsed.To16().String()
+}
+
+func IsIPv6(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	return parsed.To4() == nil
+}
+
+func IsIPv4(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	return parsed.To4() != nil
+}
+
+func ValidateIP(ip string) bool {
+	return net.ParseIP(ip) != nil
+}

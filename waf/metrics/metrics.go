@@ -1,8 +1,17 @@
 package metrics
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+)
+
+var (
+	customCounters   = make(map[string]*prometheus.CounterVec)
+	customGauges     = make(map[string]*prometheus.GaugeVec)
+	customHistograms = make(map[string]*prometheus.HistogramVec)
+	customMu         sync.RWMutex
 )
 
 var (
@@ -176,3 +185,90 @@ var (
 		[]string{"config_type"},
 	)
 )
+
+func RegisterCustomCounter(name, help string, labels []string) *prometheus.CounterVec {
+	customMu.Lock()
+	defer customMu.Unlock()
+
+	if counter, exists := customCounters[name]; exists {
+		return counter
+	}
+
+	counter := promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: name,
+			Help: help,
+		},
+		labels,
+	)
+
+	customCounters[name] = counter
+	return counter
+}
+
+func RegisterCustomGauge(name, help string, labels []string) *prometheus.GaugeVec {
+	customMu.Lock()
+	defer customMu.Unlock()
+
+	if gauge, exists := customGauges[name]; exists {
+		return gauge
+	}
+
+	gauge := promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: name,
+			Help: help,
+		},
+		labels,
+	)
+
+	customGauges[name] = gauge
+	return gauge
+}
+
+func RegisterCustomHistogram(name, help string, labels []string, buckets []float64) *prometheus.HistogramVec {
+	customMu.Lock()
+	defer customMu.Unlock()
+
+	if histogram, exists := customHistograms[name]; exists {
+		return histogram
+	}
+
+	if len(buckets) == 0 {
+		buckets = prometheus.DefBuckets
+	}
+
+	histogram := promauto.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Name:    name,
+			Help:    help,
+			Buckets: buckets,
+		},
+		labels,
+	)
+
+	customHistograms[name] = histogram
+	return histogram
+}
+
+func GetCustomCounter(name string) (*prometheus.CounterVec, bool) {
+	customMu.RLock()
+	defer customMu.RUnlock()
+	counter, exists := customCounters[name]
+	return counter, exists
+}
+
+func GetCustomGauge(name string) (*prometheus.GaugeVec, bool) {
+	customMu.RLock()
+	defer customMu.RUnlock()
+	gauge, exists := customGauges[name]
+	return gauge, exists
+}
+
+func GetCustomHistogram(name string) (*prometheus.HistogramVec, bool) {
+	customMu.RLock()
+	defer customMu.RUnlock()
+	histogram, exists := customHistograms[name]
+	return histogram, exists
+}
+

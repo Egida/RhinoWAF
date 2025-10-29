@@ -25,20 +25,24 @@ type IPRange struct {
 	CIDR        string `json:"cidr"`
 	CountryCode string `json:"country_code"`
 	CountryName string `json:"country_name"`
+	network     *net.IPNet
 }
 
 type GeoIP struct {
-	mu     sync.RWMutex
-	ranges []IPRange
-	cache  map[string]*GeoData
+	mu         sync.RWMutex
+	ranges     []IPRange
+	cache      map[string]*GeoData
+	cacheSize  int
+	cacheCount int
 }
 
 var geoIP *GeoIP
 
 func init() {
 	geoIP = &GeoIP{
-		ranges: make([]IPRange, 0),
-		cache:  make(map[string]*GeoData),
+		ranges:    make([]IPRange, 0),
+		cache:     make(map[string]*GeoData),
+		cacheSize: 10000,
 	}
 }
 
@@ -58,7 +62,21 @@ func LoadGeoDatabase(path string) error {
 	geoIP.mu.Lock()
 	defer geoIP.mu.Unlock()
 
-	return json.Unmarshal(data, &geoIP.ranges)
+	var ranges []IPRange
+	if err := json.Unmarshal(data, &ranges); err != nil {
+		return err
+	}
+
+	for i := range ranges {
+		_, network, err := net.ParseCIDR(ranges[i].CIDR)
+		if err != nil {
+			continue
+		}
+		ranges[i].network = network
+	}
+
+	geoIP.ranges = ranges
+	return nil
 }
 
 func Lookup(ip string) *GeoData {
@@ -78,25 +96,29 @@ func Lookup(ip string) *GeoData {
 	defer geoIP.mu.RUnlock()
 
 	for _, ipRange := range geoIP.ranges {
-		_, network, err := net.ParseCIDR(ipRange.CIDR)
-		if err != nil {
-			continue
-		}
-
-		if network.Contains(parsedIP) {
+		if ipRange.network != nil && ipRange.network.Contains(parsedIP) {
 			geo := &GeoData{
 				IP:          ip,
 				CountryCode: ipRange.CountryCode,
 				CountryName: ipRange.CountryName,
 			}
-			geoIP.cache[ip] = geo
+			geoIP.addToCache(ip, geo)
 			return geo
 		}
 	}
 
 	geo := &GeoData{IP: ip, CountryCode: "XX", CountryName: "Unknown"}
-	geoIP.cache[ip] = geo
+	geoIP.addToCache(ip, geo)
 	return geo
+}
+
+func (g *GeoIP) addToCache(ip string, data *GeoData) {
+	if g.cacheCount >= g.cacheSize {
+		g.cache = make(map[string]*GeoData)
+		g.cacheCount = 0
+	}
+	g.cache[ip] = data
+	g.cacheCount++
 }
 
 func GetCountryCode(ip string) string {
@@ -116,7 +138,7 @@ func ClearCache() {
 }
 
 func AddRange(cidr, countryCode, countryName string) error {
-	_, _, err := net.ParseCIDR(cidr)
+	_, network, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return err
 	}
@@ -128,6 +150,7 @@ func AddRange(cidr, countryCode, countryName string) error {
 		CIDR:        cidr,
 		CountryCode: countryCode,
 		CountryName: countryName,
+		network:     network,
 	})
 
 	return nil
