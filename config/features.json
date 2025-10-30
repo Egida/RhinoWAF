@@ -1,6 +1,6 @@
 {
-  "version": "2.4.1",
-  "last_modified": "2025-10-29T00:00:00Z",
+  "version": "2.4.0",
+  "last_modified": "2025-10-28T00:00:00Z",
   "ddos_protection": {
     "enabled": true,
     "rate_limit": 100,
@@ -22,30 +22,30 @@
     "detect_protocol_violations": true
   },
   "challenge_system": {
-    "enabled": true,
+    "enabled": false,
     "default_type": "javascript",
     "javascript_delay": 2,
     "pow_difficulty": 4,
     "session_ttl": 3600,
-    "cookie_secure": false,
-    "cookie_samesite": "Lax"
+    "cookie_secure": true,
+    "cookie_samesite": "Strict"
   },
   "fingerprinting": {
-    "enabled": true,
-    "require_canvas": true,
-    "require_webgl": true,
-    "collect_fonts": true,
-    "collect_hardware": true,
-    "block_duplicate_fingerprints": true,
-    "max_ips_per_fingerprint": 3
+    "enabled": false,
+    "require_canvas": false,
+    "require_webgl": false,
+    "collect_fonts": false,
+    "collect_hardware": false,
+    "block_duplicate_fingerprints": false,
+    "max_ips_per_fingerprint": 5
   },
   "geolocation": {
-    "enabled": true,
-    "block_countries": ["KP"],
-    "challenge_countries": ["CN", "RU", "IR"],
-    "block_proxies": true,
-    "block_tor": true,
-    "block_hosting": true
+    "enabled": false,
+    "block_countries": [],
+    "challenge_countries": [],
+    "block_proxies": false,
+    "block_tor": false,
+    "block_hosting": false
   },
   "input_validation": {
     "enabled": true,
@@ -70,8 +70,8 @@
     "enabled": true,
     "allow_search_engines": true,
     "block_scrapers": true,
-    "block_headless": true,
-    "require_user_agent": true,
+    "block_headless": false,
+    "require_user_agent": false,
     "block_suspicious_ua": true
   },
   "logging": {
@@ -88,40 +88,6 @@
     "enabled": true,
     "endpoint": "/metrics",
     "collect_detailed": true
-  },
-  "oauth2": {
-    "enabled": false,
-    "client_id": "",
-    "client_secret": "",
-    "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
-    "token_url": "https://oauth2.googleapis.com/token",
-    "redirect_url": "https://yourdomain.com/oauth2/callback",
-    "scopes": ["openid", "email", "profile"],
-    "protected_paths": ["/admin", "/api/protected"],
-    "session_timeout": 3600
-  },
-  "http3": {
-    "enabled": false,
-    "port": ":443",
-    "cert_file": "/path/to/cert.pem",
-    "key_file": "/path/to/key.pem",
-    "max_streams": 100,
-    "idle_timeout": 30,
-    "alt_svc_header": true,
-    "domains": []
-  },
-  "csrf": {
-    "enabled": true,
-    "token_length": 32,
-    "token_ttl_seconds": 3600,
-    "cookie_name": "csrf_token",
-    "header_name": "X-CSRF-Token",
-    "form_field_name": "csrf_token",
-    "secure_cookie": false,
-    "same_site": "Lax",
-    "exempt_methods": ["GET", "HEAD", "OPTIONS", "TRACE"],
-    "exempt_paths": ["/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"],
-    "double_submit": false
   },
   "backend": {
     "proxy_url": "http://localhost:9000",
