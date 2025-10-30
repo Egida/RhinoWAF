@@ -1,7 +1,0 @@
-
-2025/10/29 16:42:49 IP Manager loaded: 0 banned IPs, 0 whitelisted IPs, 0 monitored IPs, 2 geolocation rules
-2025/10/29 16:42:49 Now monitoring IP rules file for changes: ./config/ip_rules.json
-2025/10/29 16:42:49 Now monitoring GeoIP database for changes: ./config/geoip.json
-2025/10/29 16:44:27 IP Manager loaded: 0 banned IPs, 0 whitelisted IPs, 0 monitored IPs, 2 geolocation rules
-2025/10/29 16:44:27 Now monitoring IP rules file for changes: ./config/ip_rules.json
-2025/10/29 16:44:27 Now monitoring GeoIP database for changes: ./config/geoip.json

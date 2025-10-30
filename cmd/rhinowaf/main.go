@@ -29,11 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func main() {
-	fmt.Println("==============================")
-	fmt.Println(" RhinoWAF v2.4.1 starting up ")
-	fmt.Println(" Protecting your apps, one request at a time.")
-	fmt.Println("==============================")
+
 	// setup log rotation - keeps logs from eating disk space
 	logWriter := logging.SetupRotation(logging.Config{
 		Enabled:    true,
@@ -289,7 +285,7 @@ func main() {
 
 	fmt.Println("╔════════════════════════════════════════════════════════════╗")
 	fmt.Println("║                   RhinoWAF v2.4.1                          ║")
-	fmt.Println("║              Production Web Application Firewall            ║")
+	fmt.Println("║                    Starting up                             ║")
 	fmt.Println("╚════════════════════════════════════════════════════════════╝")
 	fmt.Println("")
 	fmt.Println("  Active Security Features:")

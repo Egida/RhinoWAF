@@ -1,2 +1,0 @@
-[2025-10-29T16:42:49-04:00] [INFO] logger_initialized json=./logs/ddos.log human=true human_path=./logs/ddos-readable.log
-[2025-10-29T16:44:27-04:00] [INFO] logger_initialized json=./logs/ddos.log human=true human_path=./logs/ddos-readable.log
