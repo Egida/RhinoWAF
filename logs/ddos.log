@@ -1,0 +1,2 @@
+{"batch_size":100,"compress_old":true,"event":"logger_initialized","flush_interval":"1s","human_path":"./logs/ddos-readable.log","human_readable":true,"log_path":"./logs/ddos.log","max_age_days":30,"max_size_mb":100,"timestamp":"2025-10-29T16:42:49-04:00"}
+{"batch_size":100,"compress_old":true,"event":"logger_initialized","flush_interval":"1s","human_path":"./logs/ddos-readable.log","human_readable":true,"log_path":"./logs/ddos.log","max_age_days":30,"max_size_mb":100,"timestamp":"2025-10-29T16:44:27-04:00"}

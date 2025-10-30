@@ -1,0 +1,62 @@
+[
+  {
+    "cidr": "127.0.0.0/8",
+    "country_code": "ZZ",
+    "country_name": "Localhost"
+  },
+  {
+    "cidr": "10.0.0.0/8",
+    "country_code": "ZZ",
+    "country_name": "Private"
+  },
+  {
+    "cidr": "172.16.0.0/12",
+    "country_code": "ZZ",
+    "country_name": "Private"
+  },
+  {
+    "cidr": "192.168.0.0/16",
+    "country_code": "ZZ",
+    "country_name": "Private"
+  },
+  {
+    "cidr": "1.0.0.0/8",
+    "country_code": "CN",
+    "country_name": "China"
+  },
+  {
+    "cidr": "2.0.0.0/11",
+    "country_code": "FR",
+    "country_name": "France"
+  },
+  {
+    "cidr": "2.16.0.0/13",
+    "country_code": "GB",
+    "country_name": "United Kingdom"
+  },
+  {
+    "cidr": "2.176.0.0/12",
+    "country_code": "IR",
+    "country_name": "Iran"
+  },
+  {
+    "cidr": "5.0.0.0/8",
+    "country_code": "RU",
+    "country_name": "Russia"
+  },
+  {
+    "cidr": "8.0.0.0/8",
+    "country_code": "US",
+    "country_name": "United States"
+  },
+  {
+    "cidr": "142.0.0.0/8",
+    "country_code": "CA",
+    "country_name": "Canada"
+  },
+  {
+    "cidr": "175.45.176.0/22",
+    "country_code": "KP",
+    "country_name": "North Korea"
+  }
+]

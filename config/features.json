@@ -1,0 +1,131 @@
+{
+  "version": "2.4.1",
+  "last_modified": "2025-10-29T00:00:00Z",
+  "ddos_protection": {
+    "enabled": true,
+    "rate_limit": 100,
+    "burst_limit": 150,
+    "concurrent_connections": 10,
+    "slowloris_timeout": 30,
+    "reputation_threshold": 3
+  },
+  "smuggling_detection": {
+    "enabled": true,
+    "strict_mode": true,
+    "log_violations": true,
+    "block_threshold": 4,
+    "detect_cl_te": true,
+    "detect_te_cl": true,
+    "detect_multiple_headers": true,
+    "detect_obfuscation": true,
+    "detect_invalid_values": true,
+    "detect_protocol_violations": true
+  },
+  "challenge_system": {
+    "enabled": true,
+    "default_type": "javascript",
+    "javascript_delay": 2,
+    "pow_difficulty": 4,
+    "session_ttl": 3600,
+    "cookie_secure": false,
+    "cookie_samesite": "Lax"
+  },
+  "fingerprinting": {
+    "enabled": true,
+    "require_canvas": true,
+    "require_webgl": true,
+    "collect_fonts": true,
+    "collect_hardware": true,
+    "block_duplicate_fingerprints": true,
+    "max_ips_per_fingerprint": 3
+  },
+  "geolocation": {
+    "enabled": true,
+    "block_countries": ["KP"],
+    "challenge_countries": ["CN", "RU", "IR"],
+    "block_proxies": true,
+    "block_tor": true,
+    "block_hosting": true
+  },
+  "input_validation": {
+    "enabled": true,
+    "block_sql_injection": true,
+    "block_xss": true,
+    "block_path_traversal": true,
+    "block_command_injection": true,
+    "block_ssrf": true,
+    "block_xxe": true,
+    "sanitize_all": true
+  },
+  "protocol_security": {
+    "require_https": false,
+    "min_tls_version": "1.2",
+    "allow_http2": true,
+    "block_http09": true,
+    "max_url_length": 2048,
+    "max_header_count": 50,
+    "max_body_size": 10485760
+  },
+  "bot_management": {
+    "enabled": true,
+    "allow_search_engines": true,
+    "block_scrapers": true,
+    "block_headless": true,
+    "require_user_agent": true,
+    "block_suspicious_ua": true
+  },
+  "logging": {
+    "enabled": true,
+    "log_level": "info",
+    "log_attacks": true,
+    "log_challenges": true,
+    "log_blocks": true,
+    "rotation_enabled": true,
+    "max_size_mb": 100,
+    "max_age_days": 30
+  },
+  "metrics": {
+    "enabled": true,
+    "endpoint": "/metrics",
+    "collect_detailed": true
+  },
+  "oauth2": {
+    "enabled": false,
+    "client_id": "",
+    "client_secret": "",
+    "auth_url": "https://accounts.google.com/o/oauth2/v2/auth",
+    "token_url": "https://oauth2.googleapis.com/token",
+    "redirect_url": "https://yourdomain.com/oauth2/callback",
+    "scopes": ["openid", "email", "profile"],
+    "protected_paths": ["/admin", "/api/protected"],
+    "session_timeout": 3600
+  },
+  "http3": {
+    "enabled": false,
+    "port": ":443",
+    "cert_file": "/path/to/cert.pem",
+    "key_file": "/path/to/key.pem",
+    "max_streams": 100,
+    "idle_timeout": 30,
+    "alt_svc_header": true,
+    "domains": []
+  },
+  "csrf": {
+    "enabled": true,
+    "token_length": 32,
+    "token_ttl_seconds": 3600,
+    "cookie_name": "csrf_token",
+    "header_name": "X-CSRF-Token",
+    "form_field_name": "csrf_token",
+    "secure_cookie": false,
+    "same_site": "Lax",
+    "exempt_methods": ["GET", "HEAD", "OPTIONS", "TRACE"],
+    "exempt_paths": ["/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"],
+    "double_submit": false
+  },
+  "backend": {
+    "proxy_url": "http://localhost:9000",
+    "timeout_seconds": 30,
+    "max_idle_conns": 100
+  }
+}
