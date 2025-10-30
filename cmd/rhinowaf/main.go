@@ -219,48 +219,47 @@ func main() {
 	}
 	challengeMW := challenge.NewMiddleware(challengeMgr, challengeConfig)
 
+	// Import localhost-only middleware
+	importLocalhost := func(h http.Handler) http.Handler {
+		return waf.LocalhostOnly(h)
+	}
 
-       // Import localhost-only middleware
-       importLocalhost := func(h http.Handler) http.Handler {
-	       return waf.LocalhostOnly(h)
-       }
+	mux := http.NewServeMux()
 
-       mux := http.NewServeMux()
+	// Sensitive endpoints: restrict to localhost
+	mux.Handle("/metrics", importLocalhost(promhttp.Handler()))
+	mux.Handle("/health", importLocalhost(http.HandlerFunc(health.Handler("v2.4.1"))))
+	mux.Handle("/reload", importLocalhost(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Only POST requests are accepted for configuration reload", http.StatusMethodNotAllowed)
+			return
+		}
+		if reloadMgr == nil {
+			http.Error(w, "Hot-reload system is not available", http.StatusInternalServerError)
+			return
+		}
+		log.Println("Configuration reload requested via /reload endpoint")
+		if err := reloadMgr.ReloadAll(); err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"status": "error",
+				"error":  err.Error(),
+			})
+			return
+		}
+		status := reloadMgr.GetStatus()
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "success",
+			"config": status,
+		})
+	})))
+	mux.Handle("/fingerprint/collect", importLocalhost(http.HandlerFunc(fingerprintMW.CollectHandler)))
+	mux.Handle("/fingerprint/stats", importLocalhost(http.HandlerFunc(fingerprintMW.StatsHandler)))
+	mux.Handle("/csrf/token", importLocalhost(http.HandlerFunc(csrfMW.TokenHandler)))
 
-       // Sensitive endpoints: restrict to localhost
-       mux.Handle("/metrics", importLocalhost(promhttp.Handler()))
-       mux.Handle("/health", importLocalhost(http.HandlerFunc(health.Handler("v2.4.1"))))
-       mux.Handle("/reload", importLocalhost(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	       if r.Method != http.MethodPost {
-		       http.Error(w, "Only POST requests are accepted for configuration reload", http.StatusMethodNotAllowed)
-		       return
-	       }
-	       if reloadMgr == nil {
-		       http.Error(w, "Hot-reload system is not available", http.StatusInternalServerError)
-		       return
-	       }
-	       log.Println("Configuration reload requested via /reload endpoint")
-	       if err := reloadMgr.ReloadAll(); err != nil {
-		       w.WriteHeader(http.StatusInternalServerError)
-		       _ = json.NewEncoder(w).Encode(map[string]string{
-			       "status": "error",
-			       "error":  err.Error(),
-		       })
-		       return
-	       }
-	       status := reloadMgr.GetStatus()
-	       w.Header().Set("Content-Type", "application/json")
-	       _ = json.NewEncoder(w).Encode(map[string]interface{}{
-		       "status": "success",
-		       "config": status,
-	       })
-       })))
-       mux.Handle("/fingerprint/collect", importLocalhost(http.HandlerFunc(fingerprintMW.CollectHandler)))
-       mux.Handle("/fingerprint/stats", importLocalhost(http.HandlerFunc(fingerprintMW.StatsHandler)))
-       mux.Handle("/csrf/token", importLocalhost(http.HandlerFunc(csrfMW.TokenHandler)))
-
-       // Challenge verification endpoint (still public, but can restrict if needed)
-       mux.HandleFunc("/challenge/verify", challengeMW.VerifyHandler)
+	// Challenge verification endpoint (still public, but can restrict if needed)
+	mux.HandleFunc("/challenge/verify", challengeMW.VerifyHandler)
 
 	// Proxy all requests to backend (except fingerprint/challenge endpoints)
 
