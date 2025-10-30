@@ -29,8 +29,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-
-	// setup log rotation - keeps logs from eating disk space
+func main() {
 	logWriter := logging.SetupRotation(logging.Config{
 		Enabled:    true,
 		Filename:   "./logs/rhinowaf.log",
