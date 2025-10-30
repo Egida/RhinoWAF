@@ -95,6 +95,10 @@ This project is developed collaboratively by a small team, allowing for rapid it
 - **Context Storage**: Request ID available throughout request lifecycle for logging
 - **Debugging Support**: Easier log correlation and request tracing across distributed systems
 
+### Sensitive Endpoint Protection
+
+As of v2.4.1, sensitive endpoints (/metrics, /health, /reload, /flood, /fingerprint/collect, /fingerprint/stats, /csrf/token) are restricted to localhost by default. Requests from non-localhost IPs will be blocked with HTTP 403. See `waf/localhost.go` for details.
+
 ## Production Status (v2.4.1)
 
 - **Request ID Tracking**: Enabled for all requests with X-Request-ID header

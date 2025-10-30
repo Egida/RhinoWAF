@@ -219,65 +219,59 @@ func main() {
 	}
 	challengeMW := challenge.NewMiddleware(challengeMgr, challengeConfig)
 
-	// Challenge verification endpoint
-	http.HandleFunc("/challenge/verify", challengeMW.VerifyHandler)
 
-	// Fingerprint endpoints
-	http.HandleFunc("/fingerprint/collect", fingerprintMW.CollectHandler)
-	http.HandleFunc("/fingerprint/stats", fingerprintMW.StatsHandler)
+       // Import localhost-only middleware
+       importLocalhost := func(h http.Handler) http.Handler {
+	       return waf.LocalhostOnly(h)
+       }
 
-	// Wrap handlers with both WAF and challenge protection
-	mux := http.NewServeMux()
+       mux := http.NewServeMux()
 
-	// CSRF token endpoint (v2.4.2) - no WAF protection for token generation
-	mux.HandleFunc("/csrf/token", csrfMW.TokenHandler)
+       // Sensitive endpoints: restrict to localhost
+       mux.Handle("/metrics", importLocalhost(promhttp.Handler()))
+       mux.Handle("/health", importLocalhost(http.HandlerFunc(health.Handler("v2.4.1"))))
+       mux.Handle("/reload", importLocalhost(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	       if r.Method != http.MethodPost {
+		       http.Error(w, "Only POST requests are accepted for configuration reload", http.StatusMethodNotAllowed)
+		       return
+	       }
+	       if reloadMgr == nil {
+		       http.Error(w, "Hot-reload system is not available", http.StatusInternalServerError)
+		       return
+	       }
+	       log.Println("Configuration reload requested via /reload endpoint")
+	       if err := reloadMgr.ReloadAll(); err != nil {
+		       w.WriteHeader(http.StatusInternalServerError)
+		       _ = json.NewEncoder(w).Encode(map[string]string{
+			       "status": "error",
+			       "error":  err.Error(),
+		       })
+		       return
+	       }
+	       status := reloadMgr.GetStatus()
+	       w.Header().Set("Content-Type", "application/json")
+	       _ = json.NewEncoder(w).Encode(map[string]interface{}{
+		       "status": "success",
+		       "config": status,
+	       })
+       })))
+       mux.Handle("/fingerprint/collect", importLocalhost(http.HandlerFunc(fingerprintMW.CollectHandler)))
+       mux.Handle("/fingerprint/stats", importLocalhost(http.HandlerFunc(fingerprintMW.StatsHandler)))
+       mux.Handle("/csrf/token", importLocalhost(http.HandlerFunc(csrfMW.TokenHandler)))
 
-	// Prometheus metrics endpoint (no WAF protection for monitoring)
-	mux.Handle("/metrics", promhttp.Handler())
-
-	// Health check endpoint (v2.4.1)
-	mux.HandleFunc("/health", health.Handler("v2.4.1"))
-
-	// Reload endpoint - triggers manual configuration reload (no WAF protection)
-	mux.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST requests are accepted for configuration reload", http.StatusMethodNotAllowed)
-			return
-		}
-
-		if reloadMgr == nil {
-			http.Error(w, "Hot-reload system is not available", http.StatusInternalServerError)
-			return
-		}
-
-		log.Println("Configuration reload requested via /reload endpoint")
-		if err := reloadMgr.ReloadAll(); err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]string{
-				"status": "error",
-				"error":  err.Error(),
-			})
-			return
-		}
-
-		status := reloadMgr.GetStatus()
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"status": "success",
-			"config": status,
-		})
-	})
+       // Challenge verification endpoint (still public, but can restrict if needed)
+       mux.HandleFunc("/challenge/verify", challengeMW.VerifyHandler)
 
 	// Proxy all requests to backend (except fingerprint/challenge endpoints)
+
+	// Public endpoints (can restrict more if needed)
 	mux.HandleFunc("/", waf.AdaptiveProtect(handlers.Home))
 	mux.HandleFunc("/api/", waf.AdaptiveProtect(handlers.APIHandler))
 	mux.HandleFunc("/about", waf.AdaptiveProtect(handlers.AboutHandler))
 	mux.HandleFunc("/contact", waf.AdaptiveProtect(handlers.ContactHandler))
-
-	// Legacy endpoints
 	mux.HandleFunc("/login", waf.AdaptiveProtect(handlers.Login))
 	mux.HandleFunc("/echo", waf.AdaptiveProtect(handlers.Echo))
-	mux.HandleFunc("/flood", waf.AdaptiveProtect(handlers.Flood))
+	mux.Handle("/flood", importLocalhost(http.HandlerFunc(handlers.Flood)))
 
 	// Apply middleware layers: request ID -> oauth2 -> csrf -> fingerprint -> challenge -> routes
 	handler := requestid.Middleware(oauth2Handler.Handle(csrfMW.Handler(fingerprintMW.Handler(challengeMW.Handler(mux)))))
