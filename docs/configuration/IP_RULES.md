@@ -240,24 +240,36 @@ Watch closely without blocking.
 }
 ```
 
+
 ## Geo Rules
 
-Country-based access control.
+Country-based access control. For normal security, block only high-risk countries, challenge medium-risk, and explicitly allow all others.
 
 ```json
 {
   "geo_rules": [
-    {
-      "country_code": "CN",
-      "action": "block",
-      "priority": 10,
-      "allowed_paths": ["/api/public/*"]
-    },
-    {
-      "country_code": "RU",
-      "action": "challenge",
-      "throttle_percent": 60
-    }
+    { "country_code": "CN", "action": "block", "reason": "High risk country - blocked", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 100 },
+    { "country_code": "RU", "action": "block", "reason": "High risk country - blocked", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 100 },
+    { "country_code": "KP", "action": "block", "reason": "High risk country - blocked", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 100 },
+    { "country_code": "IR", "action": "block", "reason": "High risk country - blocked", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 100 },
+    { "country_code": "SY", "action": "block", "reason": "High risk country - blocked", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 100 },
+    { "country_code": "UA", "action": "challenge", "reason": "Medium risk country - challenge", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 50 },
+    { "country_code": "BR", "action": "challenge", "reason": "Medium risk country - challenge", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 50 },
+    { "country_code": "IN", "action": "challenge", "reason": "Medium risk country - challenge", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 50 },
+    { "country_code": "NG", "action": "challenge", "reason": "Medium risk country - challenge", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 50 },
+    { "country_code": "US", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "JP", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "KR", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "SG", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "AU", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "MY", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "TH", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "ID", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "PH", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "TW", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "HK", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 },
+    { "country_code": "VN", "action": "allow", "reason": "Normal country - allowed", "created_at": "2025-10-31T00:00:00Z", "throttle_percent": 0 }
+    // ... all other countries explicitly allowed
   ]
 }
 ```

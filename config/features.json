@@ -2,12 +2,12 @@
   "version": "2.4.0",
   "last_modified": "2025-10-28T00:00:00Z",
   "ddos_protection": {
-    "enabled": true,
-    "rate_limit": 100,
-    "burst_limit": 150,
-    "concurrent_connections": 10,
-    "slowloris_timeout": 30,
-    "reputation_threshold": 3
+      "enabled": true,
+      "rate_limit": 20,
+      "burst_limit": 30,
+      "concurrent_connections": 2,
+    "slowloris_timeout": 15,
+    "reputation_threshold": 2
   },
   "smuggling_detection": {
     "enabled": true,
@@ -25,8 +25,8 @@
     "enabled": true,
     "default_type": "javascript",
     "javascript_delay": 2,
-    "pow_difficulty": 5,
-    "session_ttl": 3600,
+    "pow_difficulty": 7,
+    "session_ttl": 1800,
     "cookie_secure": true,
     "cookie_samesite": "Strict"
   },
@@ -41,8 +41,8 @@
   },
   "geolocation": {
     "enabled": true,
-    "block_countries": ["RU", "CN", "KP"],
-    "challenge_countries": ["BR", "IN"],
+    "block_countries": ["RU", "CN", "KP", "IR", "SY"],
+    "challenge_countries": ["BR", "IN", "UA", "NG"],
     "block_proxies": true,
     "block_tor": true,
     "block_hosting": true
@@ -62,13 +62,13 @@
     "min_tls_version": "1.3",
     "allow_http2": true,
     "block_http09": true,
-    "max_url_length": 2048,
-    "max_header_count": 50,
-    "max_body_size": 10485760
+    "max_url_length": 1024,
+    "max_header_count": 30,
+    "max_body_size": 5242880
   },
   "bot_management": {
     "enabled": true,
-    "allow_search_engines": true,
+    "allow_search_engines": false,
     "block_scrapers": true,
     "block_headless": true,
     "require_user_agent": true,
@@ -76,22 +76,22 @@
   },
   "logging": {
     "enabled": true,
-    "log_level": "info",
+    "log_level": "warn",
     "log_attacks": true,
     "log_challenges": true,
     "log_blocks": true,
     "rotation_enabled": true,
-    "max_size_mb": 100,
-    "max_age_days": 30
+    "max_size_mb": 50,
+    "max_age_days": 7
   },
   "metrics": {
     "enabled": true,
     "endpoint": "/metrics",
-    "collect_detailed": true
+    "collect_detailed": false
   },
   "backend": {
     "proxy_url": "http://localhost:9000",
-    "timeout_seconds": 30,
-    "max_idle_conns": 100
+    "timeout_seconds": 10,
+    "max_idle_conns": 10
   }
 }
