@@ -13,10 +13,20 @@ func LocalhostOnly(next http.Handler) http.Handler {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		if ip != "127.0.0.1" && ip != "::1" {
+
+		// parse and normalize IP to handle compressed/expanded IPv6
+		parsedIP := net.ParseIP(ip)
+		if parsedIP == nil {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		next.ServeHTTP(w, r)
+
+		// check for localhost addresses
+		if parsedIP.IsLoopback() && (parsedIP.String() == "127.0.0.1" || parsedIP.To4() == nil) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		http.Error(w, "Forbidden", http.StatusForbidden)
 	})
 }
