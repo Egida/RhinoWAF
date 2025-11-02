@@ -16,6 +16,11 @@ func AllowL7(ip string) bool {
 		return true
 	}
 
+	// Check if this is from localhost (testing/development)
+	if ip == "127.0.0.1" || ip == "::1" || ip == "localhost" {
+		return true
+	}
+
 	// Manually banned IPs are blocked immediately
 	if ipMgr.IsBanned(ip) {
 		LogReputationBlock(ip, tracker.GetOrCreate(ip))

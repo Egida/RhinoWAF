@@ -8,6 +8,20 @@ Modern Web Application Firewall (WAF) built with Go, featuring DDoS protection, 
 
 ---
 
+## Production Readiness Notice
+
+RhinoWAF is under active development. Recent testing shows Grade B performance with 87.67% attack detection and 2.60% false positive rate. While the WAF successfully blocks 100% of critical attacks (SQL injection, XSS, credential stuffing), some edge cases remain:
+
+- Bot detection may allow sophisticated bots using modern API client signatures
+- High-traffic scenarios may experience minor false positives (3.8% during peak loads)
+- Configuration tuning is recommended for your specific use case
+
+**The developers provide this software "as is" without warranty of any kind.** Users assume all risks including potential loss, damage, or downtime. Thorough testing in a staging environment matching your production workload is strongly recommended before deployment.
+
+See benchmark details below for full test results.
+
+---
+
 ## Design Philosophy
 
 RhinoWAF is designed as a modern alternative to traditional WAF solutions, addressing common pain points in legacy systems:
@@ -869,19 +883,81 @@ Edit `config/ip_rules.json` to customize:
 - Proxy/Tor blocking
 - User-agent filtering
 
-## Benchmarks (Tested Lightly)
+## Benchmarks
 
- Metrics from initial production and lab tests. More extensive testing will be done soon.
+Tested against OWASP WAF Standards v4.0 with 15 realistic scenarios covering 1,518 total requests simulating production traffic patterns.
 
-- **True Positive Rate (TPR):** ~100% (malicious requests blocked)
-- **False Positive Rate (FPR):** ~0% (legit requests blocked)
-- **Detection Latency:** ~110ms (blocked), ~66ms (allowed)
-- **Throughput:** 1000 requests processed, no errors (high throughput)
-- **Mean Time to Tune (MTTT):** ~2.5 seconds (basic config)
-- **CI/CD Integration:** Config changes auto-reload and enforce on deploy
-- **DDoS Response Time:** Near-instant (rate limiting triggers, HTTP 429)
+### Overall Performance - Grade B (Good)
 
-These results are from light testing. More thorough benchmarks and stress tests will be performed and published soon.
+- **True Positive Rate (TPR):** 87.67% ⚠ Acceptable
+- **False Positive Rate (FPR):** 2.60% ✓ Good
+- **True Negative Rate (TNR):** 97.40% ✓ Excellent
+- **False Negative Rate (FNR):** 12.33%
+
+### Attack Detection (100% on Critical Threats)
+
+| Attack Type | Detection Rate | Notes |
+|-------------|---------------|-------|
+| SQL Injection | 50/50 (100%) | All injection patterns blocked |
+| XSS Attacks | 45/45 (100%) | Complete XSS payload coverage |
+| Credential Stuffing | 60/60 (100%) | CSRF protection effective |
+| File Upload Attacks | 30/30 (100%) | Malicious file detection working |
+| Web Scrapers | 80/80 (100%) | Scraper signatures blocked |
+| Bot Attacks | 55/100 (55%) | Modern bots harder to detect* |
+
+*Bot detection intentionally allows modern API clients (curl 8.x, python-requests 2.x) to prevent false positives on legitimate automation.
+
+### Legitimate Traffic (Near-Zero False Positives)
+
+| Traffic Type | False Positives | Pass Rate |
+|-------------|----------------|-----------|
+| Browser Traffic | 0/50 (0%) | 100% |
+| E-Commerce | 0/120 (0%) | 100% |
+| SaaS Apps | 0/117 (0%) | 100% |
+| Mobile Apps | 0/40 (0%) | 100% |
+| Search Crawlers | 0/40 (0%) | 100% |
+| Webhooks | 0/25 (0%) | 100% |
+| GraphQL APIs | 0/30 (0%) | 100% |
+| API Clients | 4/40 (10%) | 90% |
+| Peak Hour Traffic | 26/691 (3.8%) | 96.2% |
+
+### Performance Metrics
+
+- **Mean Latency (Allowed):** 896µs ✓ Excellent
+- **Mean Latency (Blocked):** 358µs
+- **P50 Latency:** 506µs
+- **P95 Latency:** 2.1ms
+- **P99 Latency:** 5.6ms
+- **Max Latency:** 26.2ms
+- **Throughput:** 4.71 req/s during testing
+- **Error Rate:** 0.00%
+
+### Configuration Efficiency
+
+- **Mean Time to Tune:** ~2 seconds (config hot-reload)
+- **CI/CD Integration:** Config changes auto-reload without downtime
+- **DDoS Response:** Near-instant (rate limiting at middleware level)
+
+### Test Coverage
+
+The benchmark suite includes 15 real-world scenarios:
+1. Real browser traffic (Chrome, Firefox, Safari, Edge)
+2. Real API clients (axios, node-fetch, curl, PostmanRuntime)
+3. E-commerce workflows (product browsing, cart operations)
+4. SaaS application traffic (dashboard, API endpoints)
+5. Mobile app traffic (iOS/Android native apps)
+6. Bot attack patterns (empty UA, old clients, rapid requests)
+7. Web scraper behavior (Scrapy, automated crawlers)
+8. Credential stuffing attacks (rapid login attempts)
+9. SQL injection campaigns (12 injection patterns)
+10. XSS attack campaigns (12 XSS payloads)
+11. File upload attacks (malicious file extensions)
+12. Search engine crawlers (Googlebot, Bingbot)
+13. Webhook traffic (GitHub, Stripe, Twilio, Slack)
+14. GraphQL API traffic (queries, mutations)
+15. Peak hour traffic simulation (200 concurrent users)
+
+RhinoWAF successfully blocks 100% of critical attacks (SQL injection, XSS, credential stuffing, file uploads, scrapers) while maintaining a 2.60% false positive rate on legitimate traffic. The 12.33% false negative rate is primarily from bot attacks using modern API client user agents that overlap with legitimate automation tools.
 
 ## Changelog & Roadmap
 

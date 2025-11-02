@@ -124,16 +124,51 @@ func Clean(s string) string {
 func IsMalicious(r *http.Request) bool {
 	check := func(s string) bool {
 		s = strings.ToLower(s)
-		// common attack patterns
-		if strings.Contains(s, "<script") || strings.Contains(s, "javascript:") || strings.Contains(s, "union select") {
+
+		// XSS patterns
+		if strings.Contains(s, "<script") || strings.Contains(s, "javascript:") ||
+			strings.Contains(s, "onerror=") || strings.Contains(s, "onload=") ||
+			strings.Contains(s, "<iframe") || strings.Contains(s, "<svg") {
 			return true
 		}
+
+		// SQL injection patterns
+		if strings.Contains(s, "union select") || strings.Contains(s, "union all select") {
+			return true
+		}
+		if strings.Contains(s, "drop table") || strings.Contains(s, "drop database") {
+			return true
+		}
+		if strings.Contains(s, "' or '1'='1") || strings.Contains(s, "' or 1=1") ||
+			strings.Contains(s, "\" or \"1\"=\"1") || strings.Contains(s, "or 1=1--") {
+			return true
+		}
+		if strings.Contains(s, "'; exec") || strings.Contains(s, "'; drop") {
+			return true
+		}
+		if strings.Contains(s, "waitfor delay") {
+			return true
+		}
+		if strings.Contains(s, "' order by") && strings.Contains(s, "--") {
+			return true
+		}
+		if strings.Contains(s, "admin'--") || strings.Contains(s, "admin' --") {
+			return true
+		}
+
+		// Generic SQL patterns with context
+		if (strings.Contains(s, "' and ") || strings.Contains(s, "' or ")) &&
+			(strings.Contains(s, "'='") || strings.Contains(s, "=")) {
+			return true
+		}
+
 		if sqlOrEqualRegex.MatchString(s) {
 			return true
 		}
 		if dropTableRegex.MatchString(s) {
 			return true
 		}
+
 		return false
 	}
 

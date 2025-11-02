@@ -21,7 +21,7 @@
     "challenge_countries": [],
     "max_requests_per_ip": 1000,
     "max_connections_per_ip": 50,
-    "block_empty_user_agent": false,
+    "block_empty_user_agent": true,
     "block_suspicious_ua": true
   }
 }

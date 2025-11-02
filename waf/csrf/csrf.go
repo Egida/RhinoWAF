@@ -87,8 +87,15 @@ func (m *Manager) isExemptMethod(method string) bool {
 
 func (m *Manager) isExemptPath(path string) bool {
 	for _, exempt := range m.config.ExemptPaths {
+		// Support both exact match and prefix match (if exempt ends with /)
 		if exempt == path {
 			return true
+		}
+		if len(exempt) > 0 && exempt[len(exempt)-1] == '/' {
+			// Prefix match for paths ending with /
+			if len(path) >= len(exempt) && path[:len(exempt)] == exempt {
+				return true
+			}
 		}
 	}
 	return false

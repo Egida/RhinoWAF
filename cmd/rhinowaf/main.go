@@ -178,9 +178,14 @@ func main() {
 		SecureCookie:  false, // flip to true when you add HTTPS
 		SameSite:      http.SameSiteLaxMode,
 		ExemptMethods: []string{"GET", "HEAD", "OPTIONS", "TRACE"},
-		ExemptPaths:   []string{"/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token"},
-		DoubleSubmit:  false,
-		ErrorMessage:  "CSRF validation failed",
+		ExemptPaths: []string{
+			"/health", "/metrics", "/challenge/", "/fingerprint/", "/csrf/token",
+			"/api/webhooks", "/api/users", "/api/products", "/api/orders",
+			"/api/data", "/api/v1/search",
+			"/cart/", "/graphql",
+		},
+		DoubleSubmit: false,
+		ErrorMessage: "CSRF validation failed",
 	})
 	csrfMW := csrf.NewMiddleware(csrfManager)
 

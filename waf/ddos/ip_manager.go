@@ -1018,6 +1018,20 @@ func (m *IPManager) ValidateRequest(ctx *RequestContext) (allowed bool, reason s
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
+	// Check global bot blocking first (applies to all IPs unless whitelisted)
+	if m.config != nil && m.config.GlobalRules.BlockSuspiciousUA {
+		if isSuspiciousBot(ctx.UserAgent) {
+			return false, "suspicious_bot_detected"
+		}
+	}
+
+	// Check for empty user agent if configured
+	if m.config != nil && m.config.GlobalRules.BlockEmptyUserAgent {
+		if ctx.UserAgent == "" {
+			return false, "empty_user_agent"
+		}
+	}
+
 	rule := m.GetIPRuleByIP(ctx.IP)
 	if rule == nil {
 		return true, ""
@@ -1431,5 +1445,51 @@ func isBotUserAgent(ua string) bool {
 			return true
 		}
 	}
+	return false
+}
+
+// isSuspiciousBot checks if a user agent is a suspicious/malicious bot
+// Allows legitimate search engine crawlers but blocks scrapers and automated tools
+func isSuspiciousBot(ua string) bool {
+	if ua == "" {
+		return true // Empty UA is suspicious
+	}
+
+	uaLower := strings.ToLower(ua)
+
+	// Allow legitimate search engine bots, webhooks, and modern API clients
+	legitimateBots := []string{
+		"googlebot", "bingbot", "slurp", "duckduckbot",
+		"yandexbot", "facebookexternalhit",
+		"github-hookshot", "slack-webhook", "stripe", "twilio",
+		"axios/", "node-fetch/", "postmanruntime/", "apache-httpclient/", "okhttp/",
+		// Modern versioned API clients (2.x, 3.x, 4.x are recent)
+		"python-requests/2.", "python-requests/3.",
+		"curl/8.", "curl/7.8", "curl/7.9", // Modern curl versions only
+		"go-http-client/2.", // Go 1.8+ uses client/2.0
+	}
+	for _, bot := range legitimateBots {
+		if strings.Contains(uaLower, bot) {
+			return false
+		}
+	}
+
+	// Block suspicious patterns (old clients, headless browsers, scanners)
+	suspiciousPatterns := []string{
+		"scrapy", "scraper", "scraping",
+		"python-requests/1.", "python-requests/0.", // Old versions
+		"curl/7.6", "curl/7.7", "curl/7.5", "curl/7.4", "curl/7.3", // Old curl
+		"go-http-client/1.1", // Old Go versions
+		"headlesschrome", "phantomjs", "selenium",
+		"nikto", "nmap", "masscan", "zmap",
+		"sqlmap", "havij", "acunetix",
+		"wget/",
+	}
+	for _, pattern := range suspiciousPatterns {
+		if strings.Contains(uaLower, pattern) {
+			return true
+		}
+	}
+
 	return false
 }

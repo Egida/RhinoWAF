@@ -30,9 +30,9 @@ func DefaultConfig() *Config {
 	return &Config{
 		RateWindowSec:       2,
 		BlockDurationSec:    120,
-		Layer7Limit:         40,
-		Layer4Limit:         80,
-		BurstLimit:          100,
+		Layer7Limit:         250, // Higher limit for peak hour traffic and API bursts
+		Layer4Limit:         400, // Higher connection limit for concurrent users
+		BurstLimit:          300,
 		ReputationThreshold: -50,
 		CleanupIntervalSec:  300, // 5 min cleanup cycle
 
@@ -44,11 +44,11 @@ func DefaultConfig() *Config {
 		SlowLorisBodyTimeout:    30,  // 30 seconds to send body
 
 		// Distributed DDoS Protection
-		GlobalRateLimit:          10000, // 10K req/s total (all IPs)
-		GlobalConnectionLimit:    5000,  // 5K concurrent connections max
+		GlobalRateLimit:          15000, // 15K req/s total (all IPs)
+		GlobalConnectionLimit:    8000,  // 8K concurrent connections max
 		EnableAdaptiveThrottling: true,  // Auto-reduce limits under attack
-		SuspiciousIPThreshold:    30,    // Flag IP after 30 req in 2s
-		MaxConcurrentIPs:         1000,  // Max 1000 unique IPs at once
+		SuspiciousIPThreshold:    150,   // Higher threshold to avoid flagging webhooks and GraphQL clients
+		MaxConcurrentIPs:         2000,  // Max 2000 unique IPs at once
 	}
 }
 

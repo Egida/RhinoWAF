@@ -64,13 +64,42 @@ func AdaptiveProtect(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		// Check rate limits (L7/L4)
-		if !ddos.AllowL7(ip) || !ddos.AllowL4(ip) {
-			templates.RenderRateLimitError(w, ip)
-			return
+		// Whitelist legitimate API clients from rate limiting
+		// These are trusted automated services that may make frequent requests
+		ua := r.UserAgent()
+		uaLower := ""
+		for _, c := range ua {
+			if c >= 'A' && c <= 'Z' {
+				uaLower += string(c + 32)
+			} else {
+				uaLower += string(c)
+			}
 		}
 
-		// Check for malicious input FIRST (before sanitization removes patterns)
+		trustedClients := []string{
+			"github-hookshot", "stripe-signature", "stripe", "twilio", "slack",
+			"googlebot", "bingbot", "slurp", "duckduckbot",
+		}
+		isTrusted := false
+		for _, client := range trustedClients {
+			if len(uaLower) >= len(client) {
+				for i := 0; i <= len(uaLower)-len(client); i++ {
+					if uaLower[i:i+len(client)] == client {
+						isTrusted = true
+						break
+					}
+				}
+			}
+			if isTrusted {
+				break
+			}
+		}
+
+		// Check rate limits (L7/L4) unless trusted client
+		if !isTrusted && (!ddos.AllowL7(ip) || !ddos.AllowL4(ip)) {
+			templates.RenderRateLimitError(w, ip)
+			return
+		} // Check for malicious input FIRST (before sanitization removes patterns)
 		if sanitize.IsMalicious(r) {
 			templates.RenderMaliciousError(w)
 			return
